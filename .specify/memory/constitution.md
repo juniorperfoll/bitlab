@@ -1,16 +1,20 @@
 <!--
 Sync Impact Report
 ==================
-Version change: N/A (template) → 1.0.0
-Modified principles: N/A (initial ratification, all placeholders resolved)
-Added sections:
-  - Core Principles: I. Português Brasileiro Obrigatório (NON-NEGOTIABLE),
-    II. Arquivo Único e Zero Dependências, III. Rigor Pedagógico e Fidelidade de
-    Conteúdo, IV. Aprendizagem sem Bloqueio, V. Personalização e Variabilidade
-  - Restrições Técnicas e Privacidade
-  - Fluxo de Validação em Sala de Aula
-  - Governance
-Removed sections: none (first concrete ratification of the scaffold)
+Version change: 1.0.0 → 2.0.0
+Modified principles:
+  - II. Arquivo Único e Zero Dependências → II. Front-end Simples com Backend Mínimo
+    e Justificado (redefinição incompatível: a proibição absoluta de backend/servidor
+    dá lugar a uma exceção escopada para autenticação do professor e habilitação de
+    alunos, motivada pela feature "Duas Trilhas e Área Administrativa do Professor",
+    specs/001-duas-trilhas-admin-professor/spec.md)
+Added sections: none (seções existentes atualizadas, nenhuma nova adicionada)
+Removed sections: none
+Sections updated:
+  - Restrições Técnicas e Privacidade (persistência agora permitida no escopo de
+    autenticação/habilitação; domínio de e-mail institucional @unidavi.edu.br
+    adicionado como regra de cadastro)
+  - Governance → Revisão de conformidade (referência ao Princípio II atualizada)
 Templates requiring updates:
   - .specify/templates/plan-template.md ⚠ pending manual review (not modified by this command)
   - .specify/templates/spec-template.md ⚠ pending manual review (not modified by this command)
@@ -36,16 +40,28 @@ idioma sem tradução equivalente em pt-BR.
 UNIDAVI ministradas em português; qualquer conteúdo em outro idioma quebra a
 acessibilidade pedagógica do público-alvo.
 
-### II. Arquivo Único e Zero Dependências
+### II. Front-end Simples com Backend Mínimo e Justificado
 
-O jogo é entregue como página única (`index.html`) com HTML, CSS e JS embutidos no
-mesmo arquivo. É PROIBIDO introduzir passo de build, bundler, gerenciador de pacotes,
-framework externo ou backend/servidor. O jogo DEVE continuar funcionando ao abrir o
-arquivo diretamente no navegador, sem etapa de instalação.
+A experiência de jogo (trilhas, estações, perguntas, certificado) DEVE continuar
+implementada como front-end simples (HTML/CSS/JS, sem framework, sem bundler, sem
+passo de build) e continuar funcionando para o aluno sem etapa de instalação. É
+PROIBIDO introduzir backend, servidor ou banco de dados para qualquer finalidade fora
+do escopo abaixo, sem antes emendar esta constituição.
 
-**Racional**: simplicidade de distribuição é requisito de negócio — o professor
-compartilha o arquivo diretamente com as turmas (Google Classroom), sem infraestrutura
-de hospedagem ou processo de deploy.
+É PERMITIDO um backend mínimo (API leve + banco de dados) exclusivamente para:
+autenticar o professor administrador; e armazenar/consultar as habilitações de
+alunos às trilhas (incluindo o cadastro do aluno associado a essas habilitações).
+Toda função nova que dependa de backend fora desse escopo exige emenda formal a este
+princípio antes da implementação.
+
+**Racional**: simplicidade de distribuição continua sendo a meta para a experiência
+de jogo em si — o professor compartilha o jogo diretamente com as turmas, sem
+infraestrutura própria de hospedagem para o conteúdo pedagógico. Mas controlar quais
+alunos acessam quais trilhas exige um segredo protegido (senha do professor) e um
+estado compartilhado entre dispositivos (habilitação), o que não é alcançável com
+segurança real usando apenas armazenamento local do navegador; um backend mínimo e
+estritamente escopado a autenticação/habilitação é o menor desvio da simplicidade
+original que ainda atende esse requisito de negócio.
 
 ### III. Rigor Pedagógico e Fidelidade de Conteúdo
 
@@ -82,13 +98,20 @@ variabilidade permite reuso da trilha para reforço sem memorização de respost
 
 ## Restrições Técnicas e Privacidade
 
-- Sem persistência entre sessões e sem backend: os dados do aluno (nome, idade,
-  matrícula, turma) existem apenas em memória/local da sessão do navegador enquanto
-  o jogo estiver aberto; não podem ser enviados a servidores externos nem gravados em
-  armazenamento persistente (localStorage, cookies, banco de dados) sem necessidade
-  pedagógica explícita e documentada.
-- O código-fonte permanece HTML/CSS/JS puro (vanilla), sem frameworks front-end, sem
-  dependências via CDN e sem etapa de transpilação/build.
+- Persistência em backend é permitida apenas no escopo do Princípio II
+  (autenticação do professor e habilitação de alunos): o backend pode armazenar a
+  credencial do professor (senha protegida, nunca texto claro) e o cadastro do aluno
+  associado às habilitações (nome, idade, matrícula, turma, e-mail institucional).
+  Fora desse escopo, o restante do estado de uma sessão de jogo em andamento
+  (respostas, progresso dentro de uma trilha) continua vivendo apenas em memória/
+  sessão do navegador, sem necessidade de persistência adicional.
+- O cadastro do aluno MUST usar e-mail do domínio institucional `@unidavi.edu.br`;
+  cadastros com e-mail de outro domínio MUST ser rejeitados.
+- O código-fonte da experiência de jogo permanece HTML/CSS/JS puro (vanilla), sem
+  frameworks front-end, sem dependências via CDN e sem etapa de transpilação/build. O
+  backend mínimo autorizado pelo Princípio II fica isolado dessa regra, mas deve ser
+  o menor possível (API leve + banco de dados, sem plataforma adicional além do
+  necessário para autenticação e habilitação).
 - O único artefato de saída ao final da trilha é o código de certificação e o
   relatório de desempenho em texto, feitos para o aluno copiar e colar manualmente no
   Google Classroom.
@@ -123,7 +146,7 @@ Sync Impact Report no topo do arquivo; atualizar a versão conforme a política 
 
 **Revisão de conformidade**: antes de considerar qualquer feature, spec, plano ou
 conjunto de tasks como concluído, verificar aderência aos cinco Princípios Centrais
-acima, em especial o Princípio I (idioma) e o Princípio II (arquivo único, zero
-dependências).
+acima, em especial o Princípio I (idioma) e o Princípio II (front-end simples,
+backend mínimo e justificado apenas para autenticação/habilitação).
 
-**Version**: 1.0.0 | **Ratified**: 2026-08-18 | **Last Amended**: 2026-08-18
+**Version**: 2.0.0 | **Ratified**: 2026-08-18 | **Last Amended**: 2026-08-18
