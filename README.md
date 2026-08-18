@@ -1,4 +1,4 @@
-# BIT LAB — Trilha de Conversões
+# BIT LAB — Trilha de Arquitetura de Computadores
 
 Jogo sério (serious game) educacional, single-page em HTML/CSS/JS puro (sem dependências, sem build), criado como material didático de apoio para a disciplina **Arquitetura de Computadores** — Bacharelado em Sistemas de Informação, **UNIDAVI**.
 
