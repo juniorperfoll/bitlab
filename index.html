@@ -1,0 +1,1925 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BIT LAB — Trilha de Conversões | Arquitetura de Computadores — UNIDAVI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board:#10131c;
+  --board2:#171c2a;
+  --board3:#1e2536;
+  --solder:#2c3550;
+  --copper:#E8A33D;
+  --unidavi:#9E1B32;
+  --unidavi-l:#d4304f;
+  --led:#4FE0B0;
+  --led-off:#243049;
+  --violet:#9A7BFF;
+  --cyan:#59C3F0;
+  --ink:#EAF0FF;
+  --dim:#8E9AB8;
+  --err:#FF6B7A;
+  --disp:'Press Start 2P',monospace;
+  --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  --body:'Inter',system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--board);
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(232,163,61,.07), transparent 45%),
+    radial-gradient(circle at 88% 92%, rgba(158,27,50,.10), transparent 45%),
+    linear-gradient(transparent 95%, rgba(44,53,80,.35) 95%),
+    linear-gradient(90deg, transparent 95%, rgba(44,53,80,.35) 95%);
+  background-size:auto,auto,28px 28px,28px 28px;
+  color:var(--ink);
+  font-family:var(--body);
+  font-size:16px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:16px 18px 64px}
+.hidden{display:none !important}
+code,.mono{font-family:var(--mono)}
+.kbd{font-family:var(--mono);background:var(--board3);border:1px solid var(--solder);border-radius:4px;padding:1px 6px;font-size:.9em;color:var(--copper)}
+
+/* ---------- barra do sistema ---------- */
+.sysbar{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  border:1px solid var(--solder);border-bottom-width:3px;
+  background:linear-gradient(180deg,var(--board2),var(--board));
+  border-radius:10px;padding:10px 14px;margin-bottom:14px;
+}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.chip{
+  position:relative;
+  width:34px;height:34px;border-radius:6px;flex:none;
+  background:var(--unidavi);border:1px solid var(--unidavi-l);
+  display:grid;place-items:center;font-family:var(--disp);font-size:9px;color:#fff;
+  box-shadow:0 0 0 3px rgba(158,27,50,.18);
+}
+.bolt{
+  position:absolute;top:-9px;right:-9px;font-size:15px;line-height:1;
+  filter:drop-shadow(0 0 4px rgba(232,163,61,.9));
+  animation:boltPulse 1.6s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes boltPulse{
+  0%,100%{transform:scale(1) rotate(-6deg);opacity:.75}
+  50%{transform:scale(1.28) rotate(6deg);opacity:1}
+}
+.brand h1{font-family:var(--disp);font-size:12px;letter-spacing:.5px;line-height:1.4}
+.brand p{font-size:11px;color:var(--dim);letter-spacing:.3px}
+.sysbar .spacer{flex:1}
+.stat{display:flex;flex-direction:column;align-items:flex-end;line-height:1.2}
+.stat b{font-family:var(--mono);font-size:16px;color:var(--copper)}
+.stat span{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+.iconbtn{
+  background:var(--board3);border:1px solid var(--solder);color:var(--dim);
+  border-radius:8px;padding:7px 10px;font-family:var(--mono);font-size:12px;cursor:pointer;
+}
+.iconbtn:hover{color:var(--ink);border-color:var(--copper)}
+.iconbtn.tabbtn{
+  background:rgba(232,163,61,.14);border:1px solid var(--copper);color:var(--copper);
+  font-weight:700;padding:8px 14px;box-shadow:0 0 0 3px rgba(232,163,61,.08);
+  display:inline-flex;align-items:center;gap:6px;
+}
+.iconbtn.tabbtn:hover{background:rgba(232,163,61,.24);color:#fff;border-color:var(--copper);box-shadow:0 0 0 4px rgba(232,163,61,.16)}
+
+/* ---------- painel do registrador (elemento-assinatura) ---------- */
+.bus{
+  border:1px solid var(--solder);border-radius:10px;background:var(--board2);
+  padding:12px 14px;margin-bottom:16px;
+}
+.bus-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;flex-wrap:wrap}
+.bus-title{font-family:var(--disp);font-size:9px;color:var(--dim);letter-spacing:1px}
+.leds{display:flex;gap:6px;flex-wrap:wrap}
+.led{
+  width:38px;text-align:center;font-family:var(--mono);font-size:13px;font-weight:700;
+  padding:6px 0;border-radius:5px;background:var(--led-off);color:#4d5a78;
+  border:1px solid var(--solder);transition:all .18s ease;
+}
+.led.on{background:rgba(79,224,176,.16);color:var(--led);border-color:var(--led);box-shadow:0 0 12px rgba(79,224,176,.35)}
+.readout{display:flex;gap:8px;flex-wrap:wrap}
+.ro{background:var(--board3);border:1px solid var(--solder);border-radius:6px;padding:4px 9px;font-family:var(--mono);font-size:13px}
+.ro i{font-style:normal;color:var(--dim);font-size:10px;letter-spacing:1px;margin-right:6px}
+.ro b{color:var(--copper);font-weight:700}
+
+/* ---------- cartões / telas ---------- */
+.card{
+  border:1px solid var(--solder);border-radius:12px;background:var(--board2);
+  padding:22px;margin-bottom:16px;
+}
+h2.title{font-family:var(--disp);font-size:16px;line-height:1.6;margin-bottom:10px}
+h3.sub{font-family:var(--disp);font-size:11px;color:var(--copper);letter-spacing:1px;margin-bottom:14px}
+p.lead{color:var(--dim);margin-bottom:14px;max-width:70ch}
+
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;max-width:420px}
+.field label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--dim)}
+input[type=text]{
+  background:var(--board);border:1px solid var(--solder);border-radius:8px;
+  padding:11px 13px;color:var(--ink);font-family:var(--mono);font-size:16px;width:100%;
+}
+input[type=text]:focus{outline:2px solid var(--copper);outline-offset:1px;border-color:var(--copper)}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg button{
+  background:var(--board);border:1px solid var(--solder);color:var(--dim);
+  padding:10px 14px;border-radius:8px;cursor:pointer;font-family:var(--body);font-size:14px;
+}
+.seg button.on{border-color:var(--copper);color:var(--ink);background:rgba(232,163,61,.10)}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;cursor:pointer;
+  background:var(--copper);color:#1a1204;border:none;border-radius:9px;
+  padding:13px 22px;font-family:var(--disp);font-size:11px;letter-spacing:.5px;
+  box-shadow:0 3px 0 #a56f1e;transition:transform .08s ease,box-shadow .08s ease;
+}
+.btn:hover{transform:translateY(1px);box-shadow:0 2px 0 #a56f1e}
+.btn:active{transform:translateY(3px);box-shadow:none}
+.btn.ghost{background:transparent;color:var(--dim);border:1px solid var(--solder);box-shadow:none}
+.btn.ghost:hover{color:var(--ink);border-color:var(--copper);transform:none}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* ---------- trilha (mapa evolutivo) ---------- */
+.trilha{display:flex;flex-wrap:wrap;gap:4px;align-items:stretch}
+.arrow{display:flex;align-items:center;color:var(--solder);font-family:var(--disp);font-size:14px;padding:0 2px}
+.node{
+  position:relative;text-align:left;cursor:pointer;width:194px;
+  border:1px solid var(--solder);border-left:4px solid var(--nc,var(--solder));
+  background:var(--board2);border-radius:10px;padding:13px 15px;color:var(--ink);
+  font-family:var(--body);transition:transform .12s ease,border-color .12s ease;
+}
+.node:hover{transform:translateY(-2px);border-color:var(--copper)}
+.node .num{font-family:var(--disp);font-size:9px;color:var(--nc,var(--dim));letter-spacing:1px}
+.node .nome{font-weight:700;font-size:15px;margin:6px 0 3px}
+.node .desc{font-size:12px;color:var(--dim);line-height:1.4}
+.node .estrelas{margin-top:8px;color:var(--copper);font-size:13px;letter-spacing:2px}
+.node.locked{opacity:.4;cursor:not-allowed;filter:grayscale(.6)}
+.node.locked:hover{transform:none;border-color:var(--solder)}
+.node.atual{animation:pulse 1.8s ease-in-out infinite}
+.node.boss{border-left-color:var(--unidavi-l);background:linear-gradient(135deg,rgba(158,27,50,.18),var(--board2))}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(232,163,61,.35)}50%{box-shadow:0 0 0 6px rgba(232,163,61,0)}}
+.rankline{font-family:var(--mono);font-size:12px;color:var(--dim);margin-top:2px}
+.rankline b{color:var(--copper)}
+
+/* ---------- área de pergunta ---------- */
+.qhead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.tag{font-family:var(--mono);font-size:11px;color:var(--copper);border:1px solid var(--solder);border-radius:20px;padding:2px 10px}
+.progress{height:4px;background:var(--board3);border-radius:3px;overflow:hidden;margin:12px 0 20px}
+.progress > i{display:block;height:100%;background:var(--copper);width:0;transition:width .3s ease}
+.enun{font-size:19px;line-height:1.6;margin-bottom:6px}
+.enun b{color:var(--copper)}
+.enun .val{font-family:var(--mono);background:var(--board);border:1px solid var(--solder);border-radius:6px;padding:2px 8px;color:var(--ink);font-size:.95em;white-space:nowrap}
+.ctx{font-size:13px;color:var(--dim);margin-bottom:18px;border-left:2px solid var(--solder);padding-left:12px}
+.area{margin:18px 0}
+
+.opts{display:grid;gap:9px}
+.opt{
+  text-align:left;background:var(--board);border:1px solid var(--solder);color:var(--ink);
+  border-radius:9px;padding:13px 15px;cursor:pointer;font-family:var(--body);font-size:15px;
+  display:flex;gap:12px;align-items:center;
+}
+.opt:hover{border-color:var(--copper)}
+.opt.sel{border-color:var(--copper);background:rgba(232,163,61,.10)}
+.opt .mk{font-family:var(--disp);font-size:9px;color:var(--dim);flex:none}
+.opt.sel .mk{color:var(--copper)}
+
+.bitrow{display:flex;gap:8px;flex-wrap:wrap}
+.bitcell{display:flex;flex-direction:column;align-items:center;gap:5px}
+.bitcell .peso{font-family:var(--mono);font-size:10px;color:var(--dim)}
+.bitbtn{
+  width:52px;height:52px;border-radius:8px;border:1px solid var(--solder);
+  background:var(--led-off);color:#4d5a78;font-family:var(--mono);font-size:20px;font-weight:700;
+  cursor:pointer;transition:all .15s ease;
+}
+.bitbtn.on{background:rgba(79,224,176,.16);color:var(--led);border-color:var(--led);box-shadow:0 0 14px rgba(79,224,176,.3)}
+
+.fb{border-radius:10px;padding:16px 18px;margin-top:18px;border:1px solid var(--solder);background:var(--board3)}
+.fb.ok{border-color:var(--led);background:rgba(79,224,176,.08)}
+.fb.no{border-color:var(--err);background:rgba(255,107,122,.07)}
+.fb .t{font-family:var(--disp);font-size:11px;margin-bottom:10px;letter-spacing:1px}
+.fb.ok .t{color:var(--led)}
+.fb.no .t{color:var(--err)}
+.fb .exp{font-size:14.5px;color:var(--ink);line-height:1.65}
+.fb .exp code{background:var(--board);border:1px solid var(--solder);border-radius:4px;padding:1px 6px;color:var(--copper)}
+
+/* ---------- tabelas ---------- */
+.drawer{
+  position:fixed;inset:auto 0 0 0;max-height:72vh;overflow:auto;z-index:50;
+  background:var(--board2);border-top:2px solid var(--copper);padding:18px 20px 28px;
+  box-shadow:0 -20px 50px rgba(0,0,0,.55);
+}
+.asciigrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:5px;font-family:var(--mono);font-size:12px}
+.acell{background:var(--board);border:1px solid var(--solder);border-radius:5px;padding:5px 7px;display:flex;justify-content:space-between;gap:6px}
+.acell b{color:var(--copper);font-weight:700}
+.acell span{color:var(--dim)}
+table.nib{border-collapse:collapse;font-family:var(--mono);font-size:13px;margin-top:8px}
+table.nib td,table.nib th{border:1px solid var(--solder);padding:4px 12px;text-align:center}
+table.nib th{color:var(--dim);font-size:11px;letter-spacing:1px}
+table.nib td:nth-child(3){color:var(--copper);font-weight:700}
+.refbox{background:var(--board);border:1px solid var(--solder);border-radius:8px;padding:10px 13px;font-size:12.5px;color:var(--dim);line-height:1.7;max-width:280px}
+.refbox b{color:var(--ink)}
+
+/* ---------- certificação ---------- */
+.codebox{
+  font-family:var(--disp);font-size:clamp(20px,4vw,28px);letter-spacing:4px;
+  background:var(--board);border:2px solid var(--copper);border-radius:10px;
+  padding:20px 16px;text-align:center;color:var(--copper);margin:18px 0;
+  box-shadow:0 0 24px rgba(232,163,61,.18);
+}
+.badge{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--copper);color:var(--copper);border-radius:20px;padding:6px 16px;font-family:var(--mono);font-size:13px;margin-bottom:10px}
+pre.relatorio{
+  background:var(--board);border:1px solid var(--solder);border-radius:8px;padding:14px 16px;
+  font-family:var(--mono);font-size:12.5px;color:var(--dim);white-space:pre-wrap;line-height:1.6;
+}
+
+.bars{display:grid;gap:10px;margin:16px 0}
+.barrow{display:grid;grid-template-columns:170px 1fr 60px;gap:12px;align-items:center;font-size:13px}
+.barrow .track{height:12px;background:var(--board3);border-radius:6px;overflow:hidden}
+.barrow .track i{display:block;height:100%;background:linear-gradient(90deg,var(--unidavi),var(--copper))}
+.barrow .pc{font-family:var(--mono);color:var(--copper);text-align:right}
+
+/* ---------- tela inicial (hero) ---------- */
+.hero{
+  position:relative;overflow:hidden;border-radius:14px;
+  border:1px solid var(--solder);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(232,163,61,.16), transparent 55%),
+    radial-gradient(circle at 96% 100%, rgba(158,27,50,.28), transparent 50%),
+    linear-gradient(160deg,var(--board3),var(--board2) 55%,var(--board));
+  padding:26px 24px 22px;margin-bottom:18px;
+}
+.hero::before{
+  content:'';position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:
+    linear-gradient(transparent 94%, rgba(232,163,61,.10) 94%),
+    linear-gradient(90deg, transparent 94%, rgba(232,163,61,.10) 94%);
+  background-size:34px 34px;
+}
+.heroTop{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;position:relative}
+.heroPill{
+  font-family:var(--mono);font-size:11px;letter-spacing:1px;color:var(--copper);
+  border:1px solid var(--copper);border-radius:20px;padding:4px 12px;
+  background:rgba(232,163,61,.08);
+}
+.heroPill.led2{color:var(--led);border-color:var(--led);background:rgba(79,224,176,.08)}
+.heroPill.vi{color:var(--violet);border-color:var(--violet);background:rgba(154,123,255,.08)}
+.hero h2.title{font-size:22px;position:relative;max-width:26ch}
+.hero .tagline{color:var(--dim);font-size:14.5px;max-width:56ch;margin-top:8px;position:relative}
+
+.featgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:20px 0 4px;position:relative}
+.featcard{
+  border:1px solid var(--solder);border-radius:10px;background:rgba(16,19,28,.55);
+  padding:13px 14px;transition:transform .15s ease,border-color .15s ease;
+}
+.featcard:hover{transform:translateY(-2px);border-color:var(--copper)}
+.featcard .ic{font-size:20px;display:block;margin-bottom:6px}
+.featcard b{font-size:13px;display:block;margin-bottom:3px}
+.featcard span{font-size:11.5px;color:var(--dim);line-height:1.45;display:block}
+
+.prevwrap{margin:20px 0 6px;position:relative}
+.prevlabel{font-family:var(--disp);font-size:9px;color:var(--dim);letter-spacing:1.5px;margin-bottom:9px;display:block}
+.prevrail{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.prevchip{
+  font-family:var(--mono);font-size:11px;color:var(--ink);
+  border:1px solid var(--solder);border-left:3px solid var(--pc,var(--solder));
+  border-radius:7px;padding:6px 10px;background:var(--board);white-space:nowrap;
+}
+.prevarrow{color:var(--solder);font-size:12px}
+.prevchip.boss2{border-left-color:var(--unidavi-l);color:var(--unidavi-l);font-weight:700}
+
+.herostats{display:flex;gap:22px;flex-wrap:wrap;margin:18px 0 2px;position:relative}
+.hs{display:flex;flex-direction:column;gap:2px}
+.hs b{font-family:var(--mono);font-size:18px;color:var(--copper)}
+.hs span{font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+
+.foot{text-align:center;color:var(--dim);font-size:11.5px;margin-top:26px;line-height:1.7}
+.particle{position:fixed;width:7px;height:7px;pointer-events:none;z-index:99;border-radius:1px}
+@media (max-width:640px){
+  .brand h1{font-size:10px}
+  .enun{font-size:17px}
+  .barrow{grid-template-columns:110px 1fr 50px}
+  .led{width:32px}
+  .node{width:100%}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+:focus-visible{outline:2px solid var(--copper);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- BARRA DO SISTEMA -->
+  <div class="sysbar">
+    <div class="brand">
+      <div class="chip">BIT<span class="bolt" aria-hidden="true">⚡</span></div>
+      <div>
+        <h1>BIT LAB — TRILHA DE CONVERSÕES</h1>
+        <p>Arquitetura de Computadores · Aulas 02 e 03 · UNIDAVI</p>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="stat"><b id="stXp">0</b><span>pontos</span></div>
+    <div class="stat"><b id="stPre">—</b><span>acerto</span></div>
+    <div class="stat"><b id="stNivel">0</b><span>nível</span></div>
+    <button class="iconbtn tabbtn" id="btTab">📊 Tabelas</button>
+    <button class="iconbtn" id="btSom">Som: on</button>
+  </div>
+
+  <!-- PAINEL DO REGISTRADOR -->
+  <div class="bus hidden" id="bus">
+    <div class="bus-top">
+      <span class="bus-title">REGISTRADOR — 8 BITS</span>
+      <div class="readout">
+        <span class="ro"><i>BIN</i><b id="roBin">0000 0000</b></span>
+        <span class="ro"><i>HEX</i><b id="roHex">0x00</b></span>
+        <span class="ro"><i>OCT</i><b id="roOct">000</b></span>
+        <span class="ro"><i>DEC</i><b id="roDec">0</b></span>
+      </div>
+    </div>
+    <div class="leds" id="leds"></div>
+  </div>
+
+  <!-- TELA: INÍCIO -->
+  <div class="card" id="telaInicio" style="padding:0;background:transparent;border:none">
+    <div class="hero">
+      <h2 class="title">Seu registrador está zerado. Hora de ligar os bits.</h2>
+      <p class="tagline">
+        Uma trilha evolutiva de fixação para as Aulas 02 e 03 — sistemas de numeração,
+        conversões, frações binárias, negativos, ponto flutuante e codificação de caracteres.
+        Cada estação sobe o nível: você entra como <b style="color:var(--copper)">Recruta dos Bits</b>
+        e sai como <b style="color:var(--copper)">Mestre da Representação de Dados</b>.
+      </p>
+
+      <div class="featgrid">
+        <div class="featcard"><span class="ic">❓</span><b>Como guardar um número?</b><span>Sistemas de numeração e potências de 2, do bit ao byte.</span></div>
+        <div class="featcard"><span class="ic">🔤</span><b>Como guardar uma letra?</b><span>ASCII e UTF-8 — inclusive o código do seu próprio nome.</span></div>
+        <div class="featcard"><span class="ic">⇄</span><b>Como converter entre bases?</b><span>Binário, octal, decimal e hexadecimal, nos dois sentidos.</span></div>
+        <div class="featcard"><span class="ic">➖</span><b>E os negativos?</b><span>Sinal-magnitude, complemento de 1 e de 2 — sem sinal de menos.</span></div>
+      </div>
+
+      <div class="prevwrap">
+        <span class="prevlabel">SUA ROTA</span>
+        <div class="prevrail">
+          <span class="prevchip" style="--pc:#4FE0B0">1 · Fundamentos</span><span class="prevarrow">▸</span>
+          <span class="prevchip" style="--pc:#E8A33D">2 · Numeração</span><span class="prevarrow">▸</span>
+          <span class="prevchip" style="--pc:#59C3F0">3 · Bases</span><span class="prevarrow">▸</span>
+          <span class="prevchip" style="--pc:#9A7BFF">4 · Agrupamento</span><span class="prevarrow">▸</span>
+          <span class="prevchip" style="--pc:#FF6BA6">5 · Frações</span><span class="prevarrow">▸</span>
+          <span class="prevchip" style="--pc:#F0A84B">6 · Negativos</span><span class="prevarrow">▸</span>
+          <span class="prevchip" style="--pc:#F06B6B">7 · Ponto Flutuante</span><span class="prevarrow">▸</span>
+          <span class="prevchip" style="--pc:#7EE081">8 · Caracteres</span><span class="prevarrow">▸</span>
+          <span class="prevchip boss2">★ CERTIFICAÇÃO</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="sub">IDENTIFICAÇÃO DO OPERADOR</h3>
+      <p class="lead" style="margin-bottom:18px">
+        Alguns desafios da trilha usam esses dados para gerar perguntas exclusivas — como converter
+        a sua idade para binário ou montar seu nome em ASCII. Fica mais divertido de fixar assim.
+      </p>
+      <div class="field">
+        <label for="inNome">Nome completo</label>
+        <input type="text" id="inNome" placeholder="seu nome" autocomplete="off" maxlength="60">
+      </div>
+      <div class="row" style="align-items:flex-start">
+        <div class="field" style="max-width:160px">
+          <label for="inIdade">Idade</label>
+          <input type="text" id="inIdade" inputmode="numeric" placeholder="ex.: 19" autocomplete="off" maxlength="3">
+        </div>
+        <div class="field" style="max-width:260px">
+          <label for="inMatricula">Matrícula</label>
+          <input type="text" id="inMatricula" inputmode="numeric" placeholder="ex.: 2025104578" autocomplete="off" maxlength="20">
+        </div>
+      </div>
+      <div class="field">
+        <label>Turma</label>
+        <div class="seg" id="segTurma">
+          <button data-turma="T33F2" class="on">T33F2 — Quintas-feiras</button>
+          <button data-turma="T34F2">T34F2 — Sextas-feiras</button>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn" id="btComecar">⚡ Entrar na trilha</button>
+        <button class="btn ghost" id="btTab2">Ver tabelas de apoio</button>
+      </div>
+      <p class="foot" style="text-align:left;margin-top:22px">
+        Errar não trava a trilha: a explicação do cálculo aparece na hora — é ela que fixa o conteúdo.
+        Ao terminar a estação final, copie o relatório gerado e envie ao professor (Google Classroom) para confirmar sua presença.
+      </p>
+    </div>
+  </div>
+
+  <!-- TELA: TRILHA -->
+  <div class="card hidden" id="telaTrilha">
+    <h3 class="sub">SUA TRILHA</h3>
+    <p class="lead" id="trilhaMsg" style="margin-bottom:18px"></p>
+    <div class="trilha" id="trilha"></div>
+  </div>
+
+  <!-- TELA: JOGO -->
+  <div class="card hidden" id="telaJogo">
+    <div class="qhead">
+      <h3 class="sub" id="jgFase" style="margin:0">ESTAÇÃO</h3>
+      <span class="tag" id="jgTag">—</span>
+    </div>
+    <div class="progress"><i id="jgProg"></i></div>
+    <div class="enun" id="jgEnun"></div>
+    <div class="ctx hidden" id="jgCtx"></div>
+    <div class="area" id="jgArea"></div>
+    <div class="row">
+      <button class="btn" id="btVerificar">Verificar</button>
+      <button class="btn ghost" id="btDica">Dica (−30 pts)</button>
+      <button class="btn ghost" id="btSair">Sair da estação</button>
+    </div>
+    <div class="fb hidden" id="jgFb"></div>
+  </div>
+
+  <!-- TELA: FIM DE ESTAÇÃO -->
+  <div class="card hidden" id="telaFase">
+    <h2 class="title" id="fzTit">ESTAÇÃO CONCLUÍDA</h2>
+    <p class="lead" id="fzMsg"></p>
+    <p class="rankline" id="fzRank"></p>
+    <div class="readout" style="margin:16px 0 18px">
+      <span class="ro"><i>ACERTOS</i><b id="fzAc">0/0</b></span>
+      <span class="ro"><i>PONTOS</i><b id="fzPt">0</b></span>
+    </div>
+    <div class="row">
+      <button class="btn" id="btVoltarTrilha">Voltar à trilha</button>
+      <button class="btn ghost" id="btRefazer">Refazer com outros valores</button>
+    </div>
+  </div>
+
+  <!-- TELA: CERTIFICAÇÃO FINAL -->
+  <div class="card hidden" id="telaCert">
+    <span class="badge">🏆 <span id="certRank">Mestre da Representação de Dados</span></span>
+    <h2 class="title">Trilha concluída.</h2>
+    <p class="lead" id="certMsg"></p>
+    <div class="bars" id="certBars"></div>
+    <h3 class="sub" style="margin-top:22px">CÓDIGO DE PRESENÇA</h3>
+    <div class="codebox" id="codeBox">— — — —</div>
+    <p class="lead">Copie o relatório abaixo e envie ao professor através do Classroom conforme a atividade publicada e as regras.</p>
+    <pre class="relatorio" id="relTxt"></pre>
+    <div class="row" style="margin-top:16px">
+      <button class="btn" id="btCopiar">Copiar relatório</button>
+      <button class="btn ghost" id="btReiniciar">Reiniciar a trilha</button>
+    </div>
+    <p class="foot" style="text-align:left;margin-top:20px">
+      Nas próximas aulas veremos como o processador manipula esses dados: arquitetura de von Neumann,
+      barramentos e ciclo de instrução.
+    </p>
+  </div>
+
+  <p class="foot">
+    BIT LAB · material didático de apoio — Arquitetura de Computadores, Bacharelado em Sistemas de Informação, UNIDAVI.<br>
+    Conteúdo baseado nos slides das Aulas 02 e 03 (Sistemas de Numeração; Números Negativos, Ponto Flutuante e Codificação de Caracteres).<br>
+    Referência: STALLINGS, W. <i>Arquitetura e organização de computadores</i>. 10. ed. São Paulo: Pearson, 2017. Cap. 9 e 10.
+  </p>
+</div>
+
+<!-- GAVETA DE TABELAS -->
+<div class="drawer hidden" id="drawer">
+  <div class="row" style="justify-content:space-between;margin-bottom:14px">
+    <h3 class="sub" style="margin:0">TABELAS DE APOIO</h3>
+    <button class="iconbtn" id="btFechaTab">Fechar</button>
+  </div>
+  <div class="row" style="align-items:flex-start;gap:26px">
+    <div>
+      <p style="font-size:12px;color:var(--dim);margin-bottom:4px">Nibble — 4 bits</p>
+      <table class="nib" id="tabNib"></table>
+    </div>
+    <div style="flex:1;min-width:260px">
+      <p style="font-size:12px;color:var(--dim);margin-bottom:6px">ASCII imprimível (32–126) — decimal · hex · caractere</p>
+      <div class="asciigrid" id="tabAscii"></div>
+    </div>
+    <div class="refbox">
+      <b>Negativos (8 bits)</b><br>
+      Sinal-magnitude e complemento de 1: dois zeros, faixa −127 a +127.<br>
+      Complemento de 2: zero único, faixa −128 a +127.<br><br>
+      <b>Excesso de 128</b><br>
+      Armazenado = valor real + 128.<br><br>
+      <b>IEEE 754 (precisão simples, 32 bits)</b><br>
+      1 sinal + 8 expoente (excesso de 127) + 23 significando.
+    </div>
+  </div>
+</div>
+
+<script>
+/* =======================================================================
+   BIT LAB — Trilha de Conversões
+   Jogo sério evolutivo para fixação das Aulas 02 e 03 — Arquitetura de Computadores
+   Prof. Esp. Ademar Perfoll Junior — UNIDAVI
+   ======================================================================= */
+
+/* ---------------- utilidades ---------------- */
+const $ = id => document.getElementById(id);
+const R = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
+const pick = a => a[R(0,a.length-1)];
+const shuffle = a => { const c=a.slice(); for(let i=c.length-1;i>0;i--){const j=R(0,i);[c[i],c[j]]=[c[j],c[i]];} return c; };
+const bin = (n,w=8) => (n>>>0).toString(2).padStart(w,'0');
+const hx  = (n,w=2) => (n>>>0).toString(16).toUpperCase().padStart(w,'0');
+const oct = n => n.toString(8);
+function grp(s,k){ let out=''; for(let i=s.length;i>0;i-=k){ out = s.slice(Math.max(0,i-k),i) + (out ? ' '+out : ''); } return out; }
+function nf(n){ return n.toLocaleString('pt-BR'); }
+const V = s => '<span class="val">'+s+'</span>';
+const PESOS = [128,64,32,16,8,4,2,1];
+
+/* ---------------- verificadores de resposta ---------------- */
+function limpar(s){
+  return String(s==null?'':s).trim().replace(/[\s_]/g,'')
+    .replace(/^#/,'').replace(/^\$/,'').replace(/^0[xX]/,'')
+    .replace(/[₂₈₁₀₁₆]/g,'');
+}
+function chkInt(esperado, base){
+  return raw => {
+    let s = limpar(raw).toUpperCase();
+    if(!s) return false;
+    if(base===10){ s = s.replace(/\./g,''); return /^[-+]?\d+$/.test(s) && parseInt(s,10)===esperado; }
+    if(base===2 && /^0B[01]+$/.test(s)) s = s.slice(2);
+    const re = base===2 ? /^[01]+$/ : base===8 ? /^[0-7]+$/ : /^[0-9A-F]+$/;
+    return re.test(s) && parseInt(s,base)===esperado;
+  };
+}
+function chkFloat(esperado, tol){
+  tol = tol||1e-6;
+  return raw => {
+    const s = String(raw||'').trim().replace(/\s/g,'').replace(',','.');
+    if(!/^[-+]?(\d+\.?\d*|\.\d+)$/.test(s)) return false;
+    return Math.abs(parseFloat(s)-esperado) < tol;
+  };
+}
+function parseBinFrac(str){
+  const s = String(str||'').trim().replace(/\s/g,'').replace(',','.');
+  if(!/^[01]*(\.[01]+)?$/.test(s) || s==='' || s==='.') return null;
+  const p = s.split('.');
+  let v = p[0] ? parseInt(p[0],2) : 0;
+  const f = p[1]||'';
+  for(let k=0;k<f.length;k++) if(f[k]==='1') v += Math.pow(2,-(k+1));
+  return v;
+}
+function chkBinFrac(valor){
+  return raw => { const v = parseBinFrac(raw); return v!==null && Math.abs(v-valor) < 1e-9; };
+}
+function chkTexto(esperado){
+  const alvo = String(esperado).toUpperCase().replace(/\s/g,'');
+  return raw => String(raw||'').toUpperCase().replace(/\s/g,'') === alvo;
+}
+function chkNums(esperados){
+  return raw => {
+    const nums = String(raw||'').trim().split(/[\s,;\-]+/).filter(Boolean).map(x=>parseInt(x,10));
+    if(nums.length !== esperados.length) return false;
+    return nums.every((n,i)=> n===esperados[i]);
+  };
+}
+
+/* ---------------- tabelas de apoio ---------------- */
+(function montarTabelas(){
+  let h = '<tr><th>DEC</th><th>BIN</th><th>HEX</th></tr>';
+  for(let i=0;i<16;i++) h += '<tr><td>'+i+'</td><td>'+bin(i,4)+'</td><td>'+hx(i,1)+'</td></tr>';
+  $('tabNib').innerHTML = h;
+  let a='';
+  for(let c=32;c<=126;c++){
+    const ch = c===32 ? '␣' : String.fromCharCode(c);
+    a += '<div class="acell"><span>'+c+'</span><span>'+hx(c,2)+'</span><b>'+ch+'</b></div>';
+  }
+  $('tabAscii').innerHTML = a;
+})();
+
+/* ---------------- som ---------------- */
+let somOn = true, actx = null;
+function beep(freq, dur, tipo){
+  if(!somOn) return;
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = tipo||'square'; o.frequency.value = freq;
+    g.gain.setValueAtTime(.06, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime+dur);
+    o.connect(g); g.connect(actx.destination);
+    o.start(); o.stop(actx.currentTime+dur);
+  }catch(e){}
+}
+const somOk   = () => { beep(660,.09); setTimeout(()=>beep(990,.13),80); };
+const somErro = () => { beep(200,.20,'sawtooth'); };
+const somFase = () => { [523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.14),i*95)); };
+
+function particulas(){
+  const cores = ['#E8A33D','#4FE0B0','#9A7BFF','#59C3F0','#d4304f'];
+  for(let i=0;i<16;i++){
+    const p = document.createElement('div');
+    p.className='particle';
+    p.style.background = pick(cores);
+    p.style.left = (window.innerWidth/2 + R(-140,140))+'px';
+    p.style.top  = (window.innerHeight/2 + R(-90,90))+'px';
+    p.style.transition = 'transform .9s cubic-bezier(.2,.8,.3,1), opacity .9s linear';
+    document.body.appendChild(p);
+    requestAnimationFrame(()=>{
+      p.style.transform = 'translate('+R(-260,260)+'px,'+R(-220,120)+'px) rotate('+R(-200,200)+'deg)';
+      p.style.opacity = '0';
+    });
+    setTimeout(()=>p.remove(), 950);
+  }
+}
+
+/* ---------------- painel do registrador ---------------- */
+function montarLeds(){
+  $('leds').innerHTML = PESOS.map((p,i)=>'<div class="led" data-i="'+i+'">0</div>').join('');
+}
+montarLeds();
+function pintarBus(v){
+  if(v===null || v===undefined || isNaN(v)){ v = 0; }
+  const n = ((Math.round(v)%256)+256)%256;
+  const b = bin(n,8);
+  const leds = $('leds').children;
+  for(let i=0;i<8;i++){ leds[i].textContent = b[i]; leds[i].classList.toggle('on', b[i]==='1'); }
+  $('roBin').textContent = grp(b,4);
+  $('roHex').textContent = '0x'+hx(n,2);
+  $('roOct').textContent = oct(n).padStart(3,'0');
+  $('roDec').textContent = n;
+}
+pintarBus(0);
+
+/* =======================================================================
+   GERADORES — Estação 1: Fundamentos (bit, byte, 2ⁿ)
+   ======================================================================= */
+function g1_sigla(){
+  const opts = shuffle([
+    {t:'Binary digIT — dígito binário', ok:true},
+    {t:'Basic Interchange Term', ok:false},
+    {t:'Byte Information Type', ok:false},
+    {t:'Bi-state Integer Token', ok:false}
+  ]);
+  return {
+    tag:'Origem do termo', tipo:'escolha',
+    enun:'A palavra "bit" é abreviação de que expressão, cunhada por John Tukey em 1947?',
+    dica:'A resposta está literalmente escondida dentro da palavra "bit".',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'"Bit" vem de <b>Binary digIT</b> (dígito binário), termo cunhado por John Tukey em 1947. Um bit assume 0 (desligado) ou 1 (ligado).'
+  };
+}
+function g1_estados(){
+  const opts = shuffle([
+    {t:'Dois — presença ou ausência de energia (alto/baixo)', ok:true},
+    {t:'Dez — um nível de tensão para cada algarismo decimal', ok:false},
+    {t:'Três — positivo, negativo e neutro', ok:false},
+    {t:'Depende do fabricante do processador', ok:false}
+  ]);
+  return {
+    tag:'Por que binário', tipo:'escolha',
+    enun:'Por que os computadores representam tudo usando apenas dois estados (0 e 1)?',
+    ctx:'Representar diretamente os símbolos que os humanos usam exigiria mais de 100 níveis de tensão diferentes: caro, lento e sujeito a erro.',
+    dica:'Pense no que é fácil de manter estável em um circuito eletrônico.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'O computador reconhece de forma confiável apenas dois estados físicos distintos — presença ou ausência de energia (elétrica, magnética ou óptica). Essa robustez é o motivo da escolha binária, não uma preferência matemática.'
+  };
+}
+function g1_capacidade(){
+  const n = pick([2,3,4,5,6,7,8,10]);
+  const total = Math.pow(2,n);
+  return {
+    tag:'Capacidade — 2ⁿ', tipo:'texto', base:10,
+    enun:'Com '+V(n+' bits')+', quantos símbolos diferentes é possível representar?',
+    dica:'Aplique a fórmula 2ⁿ.',
+    check: chkInt(total,10), resp:nf(total),
+    exp:'Com n bits, existem <code>2ⁿ</code> combinações possíveis. Aqui: <code>2^'+n+' = '+nf(total)+'</code>. Essa fórmula é a base de toda a representação digital.'
+  };
+}
+function g1_byteFaixa(){
+  return {
+    tag:'O byte', tipo:'texto', base:10,
+    enun:'Um byte tem 8 bits (termo cunhado por Werner Buchholz, IBM, 1956). Quantos valores diferentes um byte representa?',
+    ctx:'Curiosidade: no Pac-Man original (1980), o número da fase é guardado em 1 único byte — por isso o jogo trava na fase 256 (o famoso bug do "kill screen").',
+    dica:'2 elevado a 8.',
+    check: chkInt(256,10), resp:'256',
+    exp:'<code>2⁸ = 256</code> valores — de 0 a 255 sem sinal, ou de −128 a +127 com sinal (complemento de 2, que veremos na estação 6).'
+  };
+}
+function g1_idadeBits(){
+  const idade = S.idade;
+  let bits=1; while(Math.pow(2,bits)-1 < idade) bits++;
+  return {
+    tag:'2ⁿ com a sua idade', tipo:'texto', base:10,
+    enun:'Você tem '+V(idade+' anos')+'. Qual é a MENOR quantidade de bits capaz de representar esse número sem sinal?',
+    dica:'Teste valores de n em 2ⁿ−1 até esse valor ser ≥ '+idade+'.',
+    check: chkInt(bits,10), resp:String(bits),
+    exp:'Com '+bits+' bits cabem até <code>2^'+bits+'−1 = '+(Math.pow(2,bits)-1)+'</code>, o suficiente para guardar '+idade+'. Com '+(bits-1)+' bits só chegaria a <code>'+(Math.pow(2,bits-1)-1)+'</code> — insuficiente.'
+  };
+}
+function g1_nesCores(){
+  const opts = shuffle(['64 cores (2⁶)','256 cores (2⁸)','16 cores (2⁴)','128 cores (2⁷)']);
+  return {
+    tag:'Contexto: NES (1983)', tipo:'escolha',
+    enun:'O NES gerava suas cores a partir de um valor de 6 bits que apontava para uma tabela fixa no hardware. Quantas cores possíveis isso permite?',
+    ctx:'É o mesmo raciocínio de 2ⁿ aplicado a uma paleta de vídeo real dos anos 1980.',
+    dica:'2 elevado a 6.',
+    opcoes: opts, correta: opts.indexOf('64 cores (2⁶)'),
+    exp:'<code>2⁶ = 64</code> cores — a paleta fixa do NES, documentada até hoje inteiramente em hexadecimal (0x00 a 0x3F) na wiki NESdev.'
+  };
+}
+function g1_atariRam(){
+  return {
+    tag:'Contexto: Atari 2600 (1977)', tipo:'texto', base:10,
+    enun:'O Atari 2600 tinha apenas 128 bytes de RAM — menos que uma linha de texto de slide. Quantos bits são 128 bytes?',
+    dica:'1 byte = 8 bits.',
+    check: chkInt(1024,10), resp:'1.024',
+    exp:'128 bytes × 8 bits = <code>1.024 bits</code> — foi tudo o que os desenvolvedores tiveram para programar o console inteiro, direto em hexadecimal.'
+  };
+}
+function g1_word(){
+  const opts = shuffle([
+    {t:'O conjunto de bits que o processador processa de uma só vez — tamanho fixo por arquitetura (ex.: 32 ou 64 bits).', ok:true},
+    {t:'Qualquer sequência de 8 bits, sinônimo exato de byte.', ok:false},
+    {t:'O nome de cada instrução em Assembly.', ok:false},
+    {t:'A quantidade de RAM total instalada na máquina.', ok:false}
+  ]);
+  return {
+    tag:'Palavra (word)', tipo:'escolha',
+    enun:'O que é uma "palavra" (word) em Arquitetura de Computadores?',
+    dica:'Pense em processadores "de 32 bits" ou "de 64 bits" — o que esse número está descrevendo?',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'A palavra é o conjunto de bits processado de uma vez pela CPU — um tamanho fixo definido pela arquitetura (32 bits, 64 bits etc.), diferente do byte, que é sempre 8 bits.'
+  };
+}
+
+/* =======================================================================
+   GERADORES — Estação 2: Sistemas de Numeração
+   ======================================================================= */
+function g2_ondeUsa(){
+  const tabela = [
+    {n:'binário', b:2, u:'Nível elétrico da máquina, lógica digital'},
+    {n:'octal', b:8, u:'Permissões de arquivo no Linux (chmod 755)'},
+    {n:'decimal', b:10, u:'Uso cotidiano, contagem do dia a dia'},
+    {n:'hexadecimal', b:16, u:'Endereços de memória, cores web, MAC address'}
+  ];
+  const alvo = pick(tabela);
+  const opts = shuffle(tabela.map(x=>x.u));
+  return {
+    tag:'Uso prático', tipo:'escolha',
+    enun:'Onde você mais frequentemente encontra o sistema <b>'+alvo.n+'</b> (base '+alvo.b+')?',
+    dica:'Pense em qual desses sistemas comprime melhor cada contexto.',
+    opcoes: opts, correta: opts.indexOf(alvo.u),
+    exp:'O sistema '+alvo.n+' (base '+alvo.b+') aparece tipicamente em: '+alvo.u+'.'
+  };
+}
+function g2_algarismos(){
+  const info = {2:{maior:'1'},8:{maior:'7'},10:{maior:'9'},16:{maior:'F'}};
+  const base = pick([2,8,10,16]);
+  const correta = base+' algarismos, maior dígito = '+info[base].maior;
+  const opts = shuffle(Object.keys(info).map(b=>b+' algarismos, maior dígito = '+info[b].maior));
+  return {
+    tag:'Regras universais', tipo:'escolha',
+    enun:'Quantos algarismos tem o sistema de base '+base+', e qual é o maior deles?',
+    ctx:'Regra universal: a quantidade de dígitos é sempre igual à base, e o maior dígito é sempre base − 1.',
+    dica:'Em base 10 o maior dígito é 9; em base 16 é F (=15).',
+    opcoes: opts, correta: opts.indexOf(correta),
+    exp:'Todo sistema de base b tem exatamente b algarismos (0 até b−1). Em base '+base+', o maior dígito é <code>'+info[base].maior+'</code>.'
+  };
+}
+function g2_msblsb(){
+  const digitos = shuffle('0123456789'.split('')).slice(0,4);
+  if(digitos[0]==='0'){ [digitos[0],digitos[1]]=[digitos[1],digitos[0]]; }
+  const numStr = digitos.join('');
+  const lado = pick(['MSB','LSB']);
+  const correto = lado==='MSB' ? numStr[0] : numStr[numStr.length-1];
+  const opts = shuffle(digitos);
+  return {
+    tag:'MSB e LSB', tipo:'escolha',
+    enun:'No número '+V(numStr)+', qual é o dígito '+lado+' ('+(lado==='MSB'?'mais significativo':'menos significativo')+')?',
+    dica:'MSB fica sempre à esquerda; LSB, à direita.',
+    opcoes: opts, correta: opts.indexOf(correto),
+    exp:'O dígito '+lado+' de <code>'+numStr+'</code> é <code>'+correto+'</code> — MSB (mais significativo) sempre à esquerda, LSB (menos significativo) sempre à direita.'
+  };
+}
+function g2_posicional(){
+  const opts = shuffle([
+    {t:'Porque o valor de cada símbolo é fixo, independente da posição em que aparece (ex.: "I" vale sempre 1).', ok:true},
+    {t:'Porque os numerais romanos usam apenas 2 símbolos, como o binário.', ok:false},
+    {t:'Porque os numerais romanos não têm um dígito para representar o zero.', ok:false},
+    {t:'Porque os numerais romanos são lidos da direita para a esquerda.', ok:false}
+  ]);
+  return {
+    tag:'Notação posicional', tipo:'escolha',
+    enun:'Por que os numerais romanos NÃO são considerados um sistema de numeração posicional?',
+    ctx:'Decimal, binário, octal e hexadecimal são todos posicionais: o valor de cada algarismo depende da posição.',
+    dica:'Compare o "I" em "IV" (4) com o "I" em "III" (3) — o valor do símbolo muda?',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Em um sistema não posicional como o romano, cada símbolo tem valor fixo. Já em sistemas posicionais, o valor do dígito depende de onde ele está — é o peso da posição que muda o resultado.'
+  };
+}
+function g2_maxComNDigitos(){
+  const base = pick([2,8,16]);
+  const nd = pick([2,3]);
+  const max = Math.pow(base,nd)-1;
+  return {
+    tag:'Faixa representável', tipo:'texto', base:10,
+    enun:'Com '+V(nd+' algarismos em base '+base)+', qual é o MAIOR valor decimal representável?',
+    dica:'O maior valor com n dígitos em base b é base^n − 1.',
+    check: chkInt(max,10), resp:String(max),
+    exp:'Maior valor = <code>'+base+'^'+nd+' − 1 = '+max+'</code>. Com n dígitos em base b, sempre cabem b^n combinações, de 0 até b^n−1.'
+  };
+}
+function g2_chmod(){
+  const tabela = {
+    '7':'leitura + escrita + execução (rwx)','6':'leitura + escrita (rw-)','5':'leitura + execução (r-x)',
+    '4':'somente leitura (r--)','3':'escrita + execução (-wx)','2':'somente escrita (-w-)',
+    '1':'somente execução (--x)','0':'nenhuma permissão (---)'
+  };
+  const chaves = ['7','6','5','4','0'];
+  const digitos = [pick(chaves),pick(chaves),pick(chaves)];
+  const cmd = 'chmod '+digitos.join('')+' arquivo.sh';
+  const correta = 'Dono: '+tabela[digitos[0]]+' · Grupo: '+tabela[digitos[1]]+' · Outros: '+tabela[digitos[2]];
+  const outrosDigitos = shuffle(chaves.filter(d=>digitos.indexOf(d)===-1)).slice(0,3);
+  const opts = shuffle([correta,
+    'Dono: '+tabela[outrosDigitos[0]||'4']+' · Grupo: '+tabela[digitos[1]]+' · Outros: '+tabela[digitos[2]],
+    'Dono: '+tabela[digitos[0]]+' · Grupo: '+tabela[outrosDigitos[1]||'0']+' · Outros: '+tabela[digitos[2]],
+    'Dono: '+tabela[digitos[0]]+' · Grupo: '+tabela[digitos[1]]+' · Outros: '+tabela[outrosDigitos[2]||'1']
+  ]);
+  return {
+    tag:'Octal no Linux', tipo:'escolha',
+    enun:'No Linux, o comando '+V(cmd)+' define quais permissões?',
+    ctx:'Cada dígito octal (0–7) codifica 3 bits: leitura(4) + escrita(2) + execução(1) — a mesma lógica de agrupamento de bits que veremos na estação 4.',
+    dica:'Some os pesos 4(leitura)+2(escrita)+1(execução) presentes em cada dígito.',
+    opcoes: opts, correta: opts.indexOf(correta),
+    exp:'Cada dígito octal representa 3 bits (rwx): '+correta+'. É por isso que permissões de arquivo usam octal — 3 bits cabem exatamente em 1 dígito.'
+  };
+}
+function g2_subscrito(){
+  const casos = [
+    {v:'2763', b:10, r:'notação decimal, a mais comum no dia a dia'},
+    {v:'1101', b:2, r:'notação binária, usada no nível elétrico da máquina'},
+    {v:'5A3', b:16, r:'notação hexadecimal, usada em endereços de memória e cores'}
+  ];
+  const c = pick(casos);
+  const opts = shuffle(casos.map(x=>x.r));
+  return {
+    tag:'Convenção de subscrito', tipo:'escolha',
+    enun:'Na notação '+V(c.v+'₍'+c.b+'₎')+', o que o subscrito indica?',
+    dica:'O subscrito evita ambiguidade — sem ele, não saberíamos em que base o número está escrito.',
+    opcoes: opts, correta: opts.indexOf(c.r),
+    exp:'O subscrito é a '+c.r+'. Convenção universal: sem ele, "101" poderia ser lido como binário, octal ou decimal — resultados bem diferentes.'
+  };
+}
+
+/* =======================================================================
+   GERADORES — Estação 3: Conversão Decimal ⇄ Outras Bases
+   ======================================================================= */
+function g3_bits(){
+  const alvo = R(20,180);
+  return {
+    tag:'Pesos posicionais', tipo:'bits', bits:8, alvo:alvo,
+    enun:'Monte o padrão binário de 8 bits que representa o decimal '+V(alvo)+', acendendo os bits certos.',
+    ctx:'Cada posição vale uma potência de 2 — a mesma lógica da notação polinomial que vem a seguir.',
+    dica:'Comece pelo maior peso (128) e vá subtraindo do valor restante.',
+    exp:'<code>'+alvo+'</code> = '+PESOS.filter((p,i)=>bin(alvo,8)[i]==='1').join(' + ')+' → <code>'+grp(bin(alvo,8),4)+'</code>₂'
+  };
+}
+function g3_decHex(){
+  const n = R(60,900);
+  let q=n, passos=[];
+  while(q>0){ passos.push(q+' ÷ 16 = '+Math.floor(q/16)+', resto '+hx(q%16,1)); q=Math.floor(q/16); }
+  return {
+    tag:'Decimal → Hex (divisão sucessiva)', tipo:'texto', base:16,
+    enun:'Converta '+V(n)+' para hexadecimal usando divisões sucessivas.',
+    dica:'Divida repetidamente por 16; os restos, lidos de baixo para cima, formam o resultado.',
+    check: chkInt(n,16), resp:'0x'+hx(n,3),
+    exp: passos.join(' · ')+' — lendo de baixo para cima: <code>0x'+hx(n,3)+'</code>'
+  };
+}
+function g3_binDec(){
+  const n = R(20,250); const b = bin(n,8);
+  const termos = PESOS.filter((p,i)=>b[i]==='1');
+  return {
+    tag:'Binário → Decimal (notação polinomial)', tipo:'texto', base:10,
+    enun:'Qual o valor decimal de '+V(grp(b,4)+'₂')+'?',
+    dica:'Some os pesos das posições em 1 — é a soma de potências de 2.',
+    check: chkInt(n,10), resp:String(n),
+    exp:'<code>'+grp(b,4)+'</code>₂ = '+termos.join(' + ')+' = <code>'+n+'</code>₁₀'
+  };
+}
+function g3_hexDec(){
+  const n = R(100,4000); const h = hx(n,3);
+  const termos = h.split('').map((d,i)=>{ const pot=h.length-1-i; return parseInt(d,16)+'×16'+(pot? '^'+pot:''); });
+  return {
+    tag:'Hex → Decimal (notação polinomial)', tipo:'texto', base:10,
+    enun:'Qual o valor decimal de '+V('0x'+h)+'?',
+    dica:'Multiplique cada dígito pela potência de 16 da sua posição (lembre: A=10 … F=15).',
+    check: chkInt(n,10), resp:nf(n),
+    exp: termos.join(' + ')+' = <code>'+nf(n)+'</code>₁₀'
+  };
+}
+function g3_decOct(){
+  const n = R(60,900);
+  let q=n, passos=[];
+  while(q>0){ passos.push(q+' ÷ 8 = '+Math.floor(q/8)+', resto '+(q%8)); q=Math.floor(q/8); }
+  return {
+    tag:'Decimal → Octal (divisão sucessiva)', tipo:'texto', base:8,
+    enun:'Converta '+V(n)+' para octal usando divisões sucessivas.',
+    dica:'Divida repetidamente por 8; leia os restos de baixo para cima.',
+    check: chkInt(n,8), resp:oct(n),
+    exp: passos.join(' · ')+' — lendo de baixo para cima: <code>'+oct(n)+'</code>₈'
+  };
+}
+function g3_idadeBin(){
+  const idade = S.idade;
+  return {
+    tag:'Sua idade → Binário', tipo:'texto', base:2,
+    enun:'Converta a sua idade ('+V(idade+' anos')+') para binário.',
+    ctx:'É a mesma lógica das divisões sucessivas por 2 — só que agora com um número que é seu.',
+    dica:'Divida sua idade por 2 sucessivamente, guardando os restos.',
+    check: chkInt(idade,2), resp:bin(idade,Math.max(4,idade.toString(2).length)),
+    exp: idade+' em binário = <code>'+idade.toString(2)+'</code>₂ — confira dividindo repetidamente por 2.'
+  };
+}
+function g3_idadeHex(){
+  const idade = S.idade;
+  return {
+    tag:'Sua idade → Hexadecimal', tipo:'texto', base:16,
+    enun:'Agora converta a sua idade ('+V(idade+' anos')+') para hexadecimal.',
+    dica:'Divida repetidamente por 16; se o resto passar de 9, use A–F.',
+    check: chkInt(idade,16), resp:'0x'+hx(idade,1),
+    exp: idade+' ÷ 16 = '+Math.floor(idade/16)+', resto '+hx(idade%16,1)+' → <code>0x'+hx(idade,1)+'</code>'
+  };
+}
+function g3_matriculaBase(){
+  const digitos = S.matricula.split('').map(Number);
+  const soma = digitos.reduce((a,b)=>a+b,0);
+  const n = 100 + (soma%156); // garante um valor estável entre 100 e 255
+  const base = pick([2,8,16]);
+  const conv = base===2 ? bin(n,8) : base===8 ? oct(n) : '0x'+hx(n,2);
+  return {
+    tag:'Da matrícula para outra base', tipo:'texto', base:base,
+    enun:'Somando os dígitos da sua matrícula ('+V(S.matricula)+') chegamos ao número '+V(n)+'. Converta '+n+' para base '+base+'.',
+    ctx:'Um jeito de gerar um número "seu" e treinar conversão ao mesmo tempo.',
+    dica: base===2?'Divisões sucessivas por 2.':base===8?'Divisões sucessivas por 8.':'Divisões sucessivas por 16 (use A–F).',
+    check: chkInt(n,base), resp: conv,
+    exp:'Soma dos dígitos da matrícula = <code>'+soma+'</code> → número de trabalho = <code>'+n+'</code> → em base '+base+' = <code>'+conv+'</code>'
+  };
+}
+
+/* =======================================================================
+   GERADORES — Estação 4: Agrupamento de Bits
+   ======================================================================= */
+function g4_binHex(){
+  const n = R(160,4095); const b = bin(n,12); const gs = grp(b,4).split(' ');
+  return {
+    tag:'Binário → Hex', tipo:'texto', base:16,
+    enun:'Compacte '+V(grp(b,4)+'₂')+' em hexadecimal.',
+    ctx:'Um endereço de memória ou uma cor em hexadecimal é só uma forma compacta de escrever um número binário — útil para humanos, idêntico para a máquina.',
+    dica:'Cada grupo de 4 bits (nibble) vira exatamente 1 dígito hexadecimal.',
+    check: chkInt(n,16), resp:'0x'+hx(n,3),
+    exp: gs.map(g=>'<code>'+g+'</code>→'+hx(parseInt(g,2),1)).join(' · ')+' = <code>0x'+hx(n,3)+'</code>'
+  };
+}
+function g4_binOct(){
+  const n = R(64,500);
+  const larguraBits = Math.ceil(n.toString(2).length/3)*3;
+  const b = bin(n, larguraBits);
+  const gs = grp(b,3).split(' ');
+  return {
+    tag:'Binário → Octal', tipo:'texto', base:8,
+    enun:'Agrupe '+V(grp(b,3)+'₂')+' em blocos de 3 bits e converta para octal.',
+    dica:'Cada grupo de 3 bits vira 1 dígito octal (0–7).',
+    check: chkInt(n,8), resp:oct(n),
+    exp: gs.map(g=>'<code>'+g+'</code>='+parseInt(g,2)).join(' · ')+' → <code>'+oct(n)+'</code>₈'
+  };
+}
+function g4_hexBin(){
+  const n = R(160,4095);
+  return {
+    tag:'Hex → Binário', tipo:'texto', base:2,
+    enun:'Expanda '+V('0x'+hx(n,3))+' para binário.',
+    dica:'Troque cada dígito hexadecimal pelos seus 4 bits correspondentes.',
+    check: chkInt(n,2), resp:grp(bin(n,12),4),
+    exp: hx(n,3).split('').map(d=>'<code>'+d+'</code>→'+bin(parseInt(d,16),4)).join(' · ')+' = <code>'+grp(bin(n,12),4)+'</code>₂'
+  };
+}
+function g4_octHexEspecial(){
+  const forward = Math.random()<0.5;
+  const n = R(50,4000);
+  const oDig = n.toString(8);
+  const hDig = n.toString(16).toUpperCase();
+  if(forward){
+    const passo1 = oDig.split('').map(d=>bin(parseInt(d,8),3)).join(' ');
+    const regroup = grp(n.toString(2),4);
+    return {
+      tag:'Octal → Hex (via binário)', tipo:'texto', base:16,
+      enun:'Converta '+V(oDig+'₈')+' para hexadecimal, passando pelo binário.',
+      ctx:'Octal (2³) e hexadecimal (2⁴) não têm relação direta de potência entre si — a conversão passa obrigatoriamente pelo binário.',
+      dica:'Primeiro expanda cada dígito octal em 3 bits; depois reagrupe os bits em blocos de 4.',
+      check: chkInt(n,16), resp:'0x'+hDig,
+      exp:'Passo 1 — cada dígito em 3 bits: <code>'+passo1+'</code><br>Passo 2 — reagrupando de 4 em 4: <code>'+regroup+'</code><br>Passo 3 — cada grupo vira um dígito hex: <code>'+hDig+'</code>'
+    };
+  }else{
+    const passo1 = hDig.split('').map(d=>bin(parseInt(d,16),4)).join(' ');
+    const regroup = grp(n.toString(2),3);
+    return {
+      tag:'Hex → Octal (via binário)', tipo:'texto', base:8,
+      enun:'Converta '+V('0x'+hDig)+' para octal, passando pelo binário.',
+      ctx:'Mesma lógica do caso anterior, mas agora reagrupando de 3 em 3.',
+      dica:'Expanda cada dígito hex em 4 bits; depois reagrupe os bits em blocos de 3.',
+      check: chkInt(n,8), resp:oDig,
+      exp:'Passo 1 — cada dígito em 4 bits: <code>'+passo1+'</code><br>Passo 2 — reagrupando de 3 em 3: <code>'+regroup+'</code><br>Passo 3 — cada grupo vira um dígito octal: <code>'+oDig+'</code>'
+    };
+  }
+}
+const CORES_HEX = [
+  {nome:'Coca-Cola', hex:'#F40009', tipo:'marca'},
+  {nome:'WhatsApp', hex:'#25D366', tipo:'marca'},
+  {nome:'Spotify', hex:'#1DB954', tipo:'marca'},
+  {nome:'Facebook', hex:'#1877F2', tipo:'marca'},
+  {nome:'McDonald\'s (amarelo)', hex:'#FFC72C', tipo:'marca'},
+  {nome:'Ferrari', hex:'#D40000', tipo:'marca'},
+  {nome:'Twitter/X (azul clássico)', hex:'#1DA1F2', tipo:'marca'},
+  {nome:'bandeira do Brasil (verde)', hex:'#009639', tipo:'bandeira'},
+  {nome:'bandeira do Brasil (amarelo)', hex:'#FEDD00', tipo:'bandeira'},
+  {nome:'bandeira da Itália (verde)', hex:'#009246', tipo:'bandeira'},
+  {nome:'bandeira da Alemanha (amarelo)', hex:'#FFCE00', tipo:'bandeira'},
+  {nome:'Nintendo (vermelho)', hex:'#E60012', tipo:'marca'},
+  {nome:'PlayStation (azul)', hex:'#003791', tipo:'marca'},
+];
+function g4_corReconhece(){
+  const alvo = pick(CORES_HEX);
+  const outros = shuffle(CORES_HEX.filter(c=>c!==alvo)).slice(0,3);
+  const opts = shuffle([alvo, ...outros].map(c=>c.nome));
+  return {
+    tag:'Hex no mundo real', tipo:'escolha',
+    enun:'A cor '+V(alvo.hex)+' é usada oficialmente por qual marca/bandeira?',
+    ctx:'Toda cor na Web é só um número hexadecimal de 6 dígitos — 2 para vermelho, 2 para verde, 2 para azul (#RRGGBB).',
+    dica:'Pense em qual dessas identidades visuais combina com esse tom.',
+    opcoes: opts, correta: opts.indexOf(alvo.nome),
+    exp:'<code>'+alvo.hex+'</code> é a cor oficial de '+alvo.nome+'. Formato #RRGGBB: cada par de dígitos hex vale de 00 a FF (0–255) em decimal.'
+  };
+}
+function g4_corComponente(){
+  const alvo = pick(CORES_HEX);
+  const hexPuro = alvo.hex.replace('#','');
+  const canalIdx = pick([0,1,2]);
+  const canalNome = ['Vermelho (R)','Verde (G)','Azul (B)'][canalIdx];
+  const par = hexPuro.slice(canalIdx*2, canalIdx*2+2);
+  const valor = parseInt(par,16);
+  return {
+    tag:'Decodificando #RRGGBB', tipo:'texto', base:10,
+    enun:'Na cor de '+alvo.nome+' ('+V(alvo.hex)+'), qual é o valor decimal do componente '+canalNome+'?',
+    dica:'Pegue os 2 dígitos hex correspondentes e converta para decimal (0–255).',
+    check: chkInt(valor,10), resp:String(valor),
+    exp:'O par <code>'+par+'</code> em hexadecimal equivale a <code>'+valor+'</code> em decimal — dentro da faixa 0–255 (1 byte) de cada canal de cor.'
+  };
+}
+function g4_nesPaleta(){
+  const opts = shuffle(['4 cores (2 bits)','8 cores (3 bits)','16 cores (4 bits)','2 cores (1 bit)']);
+  return {
+    tag:'Contexto: NES (1983)', tipo:'escolha',
+    enun:'No NES, cada pixel dentro de um "tile" gráfico usava apenas 2 bits para escolher sua cor. Quantas cores cabem em uma paleta de 2 bits?',
+    ctx:'Documentações técnicas como a wiki NESdev descrevem essas paletas inteiramente em hexadecimal.',
+    dica:'2 elevado a 2.',
+    opcoes: opts, correta: opts.indexOf('4 cores (2 bits)'),
+    exp:'<code>2² = 4</code> cores por paleta — a limitação técnica que definiu a estética visual dos jogos de 8 bits.'
+  };
+}
+
+/* =======================================================================
+   GERADORES — Estação 5: Números Fracionários
+   ======================================================================= */
+const FRACOES = [
+  {d:0.5,b:'0,1'},{d:0.25,b:'0,01'},{d:0.75,b:'0,11'},{d:0.125,b:'0,001'},
+  {d:0.375,b:'0,011'},{d:0.625,b:'0,101'},{d:0.875,b:'0,111'},
+  {d:0.3125,b:'0,0101'},{d:0.6875,b:'0,1011'},{d:0.9375,b:'0,1111'}
+];
+function g5_fracBinDec(){
+  const intPart = R(0,15);
+  const fracLen = pick([3,4]);
+  let bits=[]; for(let i=0;i<fracLen;i++) bits.push(R(0,1));
+  if(bits.every(b=>b===0)) bits[fracLen-1]=1;
+  let value = intPart, termos=[];
+  bits.forEach((b,i)=>{ if(b){ const p=Math.pow(2,-(i+1)); value+=p; termos.push('2⁻'+(i+1)); } });
+  const ib = intPart.toString(2);
+  const fb = bits.join('');
+  return {
+    tag:'Fração binária → Decimal', tipo:'texto',
+    enun:'Qual o valor decimal de '+V(ib+','+fb+'₂')+'?',
+    dica:'À direita da vírgula os pesos são 2⁻¹, 2⁻², 2⁻³…',
+    check: chkFloat(value), resp:String(value).replace('.',','),
+    exp:'Parte inteira <code>'+ib+'</code> = '+intPart+'. Parte fracionária: '+(termos.length?termos.join(' + '):'0')+' → total = <code>'+String(value).replace('.',',')+'</code>'
+  };
+}
+function g5_fracDecBin(){
+  const f = pick(FRACOES);
+  let x=f.d, passos=[];
+  for(let i=0;i<6 && x>0;i++){ const p=x*2; passos.push(String(x).replace('.',',')+'×2='+String(p).replace('.',',')+'→'+Math.floor(p)); x=p-Math.floor(p); }
+  return {
+    tag:'Fração decimal → Binário', tipo:'texto',
+    enun:'Converta '+V(String(f.d).replace('.',',')+'₁₀')+' para binário (método das multiplicações por 2).',
+    dica:'Multiplique a parte fracionária por 2 repetidamente; leia as partes inteiras de cima para baixo.',
+    check: chkBinFrac(f.d), resp:f.b,
+    exp: passos.join(' · ')+' → <code>'+f.b+'</code>₂'
+  };
+}
+function g5_misto(){
+  const intPart = R(1,20);
+  const frac = pick(FRACOES);
+  const total = intPart+frac.d;
+  const respBin = intPart.toString(2)+','+frac.b.slice(2);
+  return {
+    tag:'Número misto → Binário', tipo:'texto',
+    enun:'Converta '+V(String(total).replace('.',',')+'₁₀')+' para binário (parte inteira e fracionária).',
+    dica:'Converta a parte inteira por divisões sucessivas e a fracionária por multiplicações por 2 — depois junte os dois resultados.',
+    check: chkBinFrac(total), resp:respBin,
+    exp:'Parte inteira: <code>'+intPart+'</code> = <code>'+intPart.toString(2)+'</code>₂. Parte fracionária: '+String(frac.d).replace('.',',')+' = <code>'+frac.b.slice(2)+'</code>₂. Resultado: <code>'+respBin+'</code>₂'
+  };
+}
+function g5_dizima(){
+  const opts = shuffle([
+    {t:'Porque frações decimais como 0,8 podem gerar uma sequência infinita e periódica de bits — o mesmo motivo pelo qual 1/3 não termina em decimal.', ok:true},
+    {t:'Porque o computador arredonda toda fração para o inteiro mais próximo.', ok:false},
+    {t:'Porque frações decimais exigem sempre mais de 64 bits para serem representadas.', ok:false},
+    {t:'Porque apenas frações negativas geram dízimas ao serem convertidas para binário.', ok:false}
+  ]);
+  return {
+    tag:'Dízima binária', tipo:'escolha',
+    enun:'Por que uma fração decimal simples, como 0,8, pode não ter representação binária finita?',
+    ctx:'É exatamente isso que causa o resultado de 0.1 + 0.2 em qualquer linguagem de programação — veremos isso na estação de ponto flutuante.',
+    dica:'Pense no equivalente em decimal: por que 1/3 não termina (0,333...)?',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Assim como 1/3 não fecha em decimal, 0,8 não fecha em binário — vira uma dízima periódica. Não é um bug: é uma limitação matemática da representação posicional com um número finito de bits.'
+  };
+}
+function g5_alphaGame(){
+  const alphas = [{d:0.5,b:'1000'},{d:0.25,b:'0100'},{d:0.75,b:'1100'},{d:0.125,b:'0010'},{d:0.875,b:'1110'}];
+  const a = pick(alphas);
+  return {
+    tag:'Contexto: canal alpha', tipo:'texto',
+    enun:'Um sprite usa um canal de transparência (alpha) de 4 bits fracionários. Para uma opacidade de '+V(String(a.d).replace('.',','))+' (100%=1,0), qual o padrão binário?',
+    ctx:'Motores gráficos usam frações binárias de largura fixa para canais de cor e transparência — a mesma lógica da notação polinomial fracionária.',
+    dica:'Multiplique repetidamente por 2, como no método de conversão de frações.',
+    check: chkBinFrac(a.d), resp:'0,'+a.b,
+    exp:String(a.d).replace('.',',')+' em binário fracionário (4 bits) = <code>0,'+a.b+'</code>₂ — cada bit vale 2⁻¹, 2⁻², 2⁻³, 2⁻⁴.'
+  };
+}
+function g5_pontoFixoUso(){
+  const opts = shuffle([
+    {t:'DSPs (processadores de sinais digitais) e sistemas embarcados, onde a faixa de valores é conhecida e o desempenho é crítico.', ok:true},
+    {t:'Cálculo científico com grandezas de magnitude muito variada, como massa de partículas e de estrelas.', ok:false},
+    {t:'Armazenamento de texto e emojis em qualquer idioma.', ok:false},
+    {t:'Representação de números negativos em qualquer arquitetura moderna.', ok:false}
+  ]);
+  return {
+    tag:'Onde ponto fixo sobrevive', tipo:'escolha',
+    enun:'Apesar de limitado, o formato de ponto fixo ainda é usado hoje. Onde?',
+    ctx:'A vírgula fixa limita a faixa representável — por isso não serve para grandezas muito variadas.',
+    dica:'Pense em hardware onde a faixa de valores é previsível e a velocidade importa mais que a flexibilidade.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Ponto fixo continua em DSPs e sistemas embarcados: mais simples e rápido de operar em hardware quando a faixa de valores já é conhecida de antemão.'
+  };
+}
+
+/* =======================================================================
+   GERADORES — Estação 6: Números Negativos
+   ======================================================================= */
+function g6_sinalMag(){
+  const m = R(1,120); const sinalNeg = Math.random()<0.5;
+  const pattern = (sinalNeg?128:0)+m;
+  return {
+    tag:'Sinal-magnitude', tipo:'texto', base:2,
+    enun:'Represente '+V((sinalNeg?'−':'+')+m)+' em sinal-magnitude, usando 8 bits.',
+    dica:'O bit mais à esquerda indica o sinal (0=positivo, 1=negativo); os outros 7 bits guardam a magnitude.',
+    check: chkInt(pattern,2), resp:grp(bin(pattern,8),4),
+    exp:'Sinal: <code>'+(sinalNeg?1:0)+'</code> · Magnitude de '+m+': <code>'+bin(m,7)+'</code> → <code>'+grp(bin(pattern,8),4)+'</code>₂'
+  };
+}
+function g6_c1(){
+  const m = R(1,120); const c1 = (~m)&255;
+  return {
+    tag:'Complemento de 1', tipo:'texto', base:2,
+    enun:'O padrão de +'+m+' em 8 bits é '+V(grp(bin(m,8),4)+'₂')+'. Qual é o seu complemento de 1?',
+    ctx:'O complemento de 1 desapareceu do hardware nos anos 1960, mas sobrevive no cálculo de checksum dos protocolos IP e TCP.',
+    dica:'Inverta cada bit — 0 vira 1 e 1 vira 0.',
+    check: chkInt(c1,2), resp:grp(bin(c1,8),4),
+    exp:'<code>'+grp(bin(m,8),4)+'</code> → inverte todos os bits → <code>'+grp(bin(c1,8),4)+'</code>'
+  };
+}
+function g6_c2(){
+  const m = R(1,120); const c2 = (256-m)&255;
+  return {
+    tag:'Complemento de 2', tipo:'texto', base:2,
+    enun:'Represente '+V('−'+m)+' em complemento de 2, usando 8 bits.',
+    dica:'Inverta os bits de +'+m+' e some 1.',
+    check: chkInt(c2,2), resp:grp(bin(c2,8),4),
+    exp:'+'+m+' = <code>'+grp(bin(m,8),4)+'</code> → inverte: <code>'+grp(bin((~m)&255,8),4)+'</code> → soma 1: <code>'+grp(bin(c2,8),4)+'</code>'
+  };
+}
+function g6_vantagens(){
+  const opts = shuffle([
+    {t:'Existe um único zero, e soma/subtração usam o mesmo circuito — sem redundância de hardware.', ok:true},
+    {t:'Ocupa menos bits do que sinal-magnitude para representar o mesmo número.', ok:false},
+    {t:'É mais fácil de ler visualmente do que o decimal.', ok:false},
+    {t:'Permite representar frações sem usar ponto flutuante.', ok:false}
+  ]);
+  return {
+    tag:'Por que venceu', tipo:'escolha',
+    enun:'Qual é a principal vantagem do complemento de 2 sobre sinal-magnitude e complemento de 1?',
+    dica:'Pense nos dois problemas do sinal-magnitude: dois zeros e dois circuitos na ULA.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Sinal-magnitude e complemento de 1 têm duas representações para o zero e exigem tratamento especial na soma. O complemento de 2 tem um único zero e usa o mesmo somador para soma e subtração — por isso é o padrão em x86, ARM, RISC-V e praticamente todo processador moderno.'
+  };
+}
+function g6_menos128(){
+  const opts = ['Sinal-magnitude','Complemento de 1','Complemento de 2','Nenhuma das três'];
+  return {
+    tag:'A pegadinha do −128', tipo:'escolha',
+    enun:'Em 8 bits, qual das três técnicas consegue representar o valor −128?',
+    ctx:'Sinal-magnitude e complemento de 1 vão apenas de −127 a +127.',
+    dica:'A faixa do complemento de 2 é assimétrica: de −2⁷ até +2⁷−1.',
+    opcoes: opts, correta: 2,
+    exp:'Só o <b>complemento de 2</b> representa −128 (padrão <code>1000 0000</code>) — sua faixa vai de −128 a +127, consequência direta de ter um único zero. As outras duas técnicas param em −127.'
+  };
+}
+function g6_excesso128(){
+  const valorReal = pick([-100,-64,-50,-33,-20,-15,-10,-5,-3,-1,1,3,5,10,15,20,33,50,64,90]);
+  const armazenado = valorReal+128;
+  return {
+    tag:'Excesso de 128 (bias)', tipo:'texto', base:2,
+    enun:'Usando excesso de 128, como o valor real '+V(valorReal)+' fica armazenado em 8 bits?',
+    ctx:'No excesso de 2^(m−1), soma-se um viés fixo ao valor real antes de guardar. Você vai encontrar exatamente essa ideia na próxima estação, na parte do expoente do IEEE 754.',
+    dica:'Armazenado = valor real + 128. Depois é só converter para binário.',
+    check: chkInt(armazenado,2), resp:grp(bin(armazenado,8),4),
+    exp: valorReal+' + 128 = <code>'+armazenado+'</code> → <code>'+grp(bin(armazenado,8),4)+'</code>₂'
+  };
+}
+function g6_gandhi(){
+  const opts = shuffle([
+    {t:'É um MITO — Sid Meier confirmou em sua autobiografia (2020) que esse bug nunca existiu no código original de Civilization.', ok:true},
+    {t:'É real — um integer overflow fazia a agressividade saltar de 1 para 255 ao adotar democracia.', ok:false},
+    {t:'É real, mas só na versão de Super Nintendo do jogo.', ok:false},
+    {t:'Nunca existiu essa lenda entre jogadores de Civilization.', ok:false}
+  ]);
+  return {
+    tag:'Contexto: Civilization (1991)', tipo:'escolha',
+    enun:'A lenda do "Gandhi Nuclear" descreve um suposto bug de underflow em inteiro sem sinal no jogo Civilization. Qual é a verdade sobre essa história?',
+    ctx:'A lenda é um ótimo exercício mental de underflow: agressividade 1, subtrai-se 2, e como a variável seria um byte sem sinal (0–255), o valor "estouraria" para 255.',
+    dica:'Lembre do bug real do Pac-Man (kill screen) — este aqui é diferente: um dos dois é mito confirmado pelo próprio criador do jogo.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'É um <b>mito</b>: mesmo sendo um ótimo exemplo didático de underflow sem sinal, o próprio Sid Meier confirmou que esse bug nunca existiu no código original. Vale sempre checar a fonte antes de repetir uma lenda da internet.'
+  };
+}
+function g6_idadeC2(){
+  const idade = S.idade;
+  const c2 = (256-idade)&255;
+  return {
+    tag:'Sua idade em complemento de 2', tipo:'texto', base:2,
+    enun:'Represente −'+idade+' (o negativo da sua idade) em complemento de 2, usando 8 bits.',
+    dica:'Escreva +'+idade+' em binário, inverta todos os bits e some 1.',
+    check: chkInt(c2,2), resp:grp(bin(c2,8),4),
+    exp:'+'+idade+' = <code>'+grp(bin(idade,8),4)+'</code> → inverte: <code>'+grp(bin((~idade)&255,8),4)+'</code> → soma 1: <code>'+grp(bin(c2,8),4)+'</code>'
+  };
+}
+
+/* =======================================================================
+   GERADORES — Estação 7: Ponto Flutuante e IEEE 754
+   ======================================================================= */
+function g7_pontoFixoVsFlutuante(){
+  const opts = shuffle([
+    {t:'A posição da vírgula — todos os números têm a mesma quantidade de dígitos inteiros e fracionários.', ok:true},
+    {t:'A quantidade de bits do expoente.', ok:false},
+    {t:'O valor do bit de sinal.', ok:false},
+    {t:'O tamanho total do número em bytes.', ok:false}
+  ]);
+  return {
+    tag:'Ponto fixo', tipo:'escolha',
+    enun:'No formato de ponto fixo, o que permanece FIXO?',
+    ctx:'Ponto fixo ainda aparece em DSPs e sistemas embarcados, onde a faixa de valores é conhecida e limitada.',
+    dica:'O nome do formato já dá a resposta.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'No ponto fixo, a posição da vírgula é fixa — por isso a faixa representável é pequena e rígida, inadequada para grandezas muito variadas (como a massa de um elétron vs. a massa do Sol).'
+  };
+}
+function g7_010203(){
+  const opts = shuffle([
+    {t:'0.30000000000000004 — 0,1 não tem representação binária finita.', ok:true},
+    {t:'0.3 exatamente, como em qualquer calculadora.', ok:false},
+    {t:'Erro de execução: ponto flutuante não soma frações decimais.', ok:false},
+    {t:'0.29999999999999998 — o erro é sempre para menos.', ok:false}
+  ]);
+  return {
+    tag:'0.1 + 0.2', tipo:'escolha',
+    enun:'Digite <span class="kbd">0.1 + 0.2</span> no console do navegador (F12). Qual é o resultado exibido?',
+    ctx:'Você verá esse resultado em Python, JavaScript e qualquer linguagem que use IEEE 754 — não é bug de programador.',
+    dica:'Lembre da dízima binária periódica da estação anterior.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'<code>0.30000000000000004</code>. Como 0,1 e 0,2 não têm representação binária exata, cada um já chega truncado em 53 bits de mantissa — a soma carrega esse pequeno erro de arredondamento.'
+  };
+}
+function g7_casosEspeciais(){
+  const rows = [
+    {exp:'todos 0', mant:'todos 0', s:'Zero (+0 ou −0, conforme o sinal)'},
+    {exp:'todos 0', mant:'diferente de 0', s:'Número subnormal (muito próximo de zero)'},
+    {exp:'todos 1', mant:'todos 0', s:'Infinito (+∞ ou −∞)'},
+    {exp:'todos 1', mant:'diferente de 0', s:'NaN (Not a Number) — ex.: 0/0, √−1'}
+  ];
+  const r = pick(rows);
+  const opts = shuffle(rows.map(x=>x.s));
+  return {
+    tag:'Casos especiais IEEE 754', tipo:'escolha',
+    enun:'No IEEE 754, um número com expoente <b>'+r.exp+'</b> e significando <b>'+r.mant+'</b> representa o quê?',
+    dica:'Expoente "todos 1" sempre indica um valor especial (infinito ou NaN).',
+    opcoes: opts, correta: opts.indexOf(r.s),
+    exp:'Expoente '+r.exp+' + significando '+r.mant+' → <b>'+r.s+'</b>. Esses quatro casos são reservados no padrão para situações que a notação normal não cobre.'
+  };
+}
+function g7_normalizar(){
+  const n = R(5,250); const b = n.toString(2); const e = b.length-1;
+  return {
+    tag:'Normalização', tipo:'texto', base:10,
+    enun:'Ao normalizar '+V(b+'₂')+' para a forma 1,xxx × 2^e, qual é o valor do expoente e?',
+    dica:'e é a quantidade de casas que a vírgula "andou" até sobrar só um 1 antes dela.',
+    check: chkInt(e,10), resp:String(e),
+    exp:'<code>'+b+'</code>₂ = <code>1,'+b.slice(1)+' × 2^'+e+'</code>. O primeiro 1 vira o bit implícito (não é armazenado, mas sempre está lá) e o expoente conta quantas posições ele andou.'
+  };
+}
+function g7_ieeeCompleto(){
+  const intPart = R(1,15);
+  const frac = pick(FRACOES);
+  const sinalNeg = Math.random()<0.5;
+  const v = (sinalNeg?-1:1)*(intPart+frac.d);
+  const e = Math.floor(Math.log2(Math.abs(v)));
+  const arm = e+127;
+  return {
+    tag:'IEEE 754 completo', tipo:'multi',
+    enun:'Prepare o valor '+V(String(v).replace('.',','))+' para o formato IEEE 754 de precisão simples (32 bits).',
+    ctx:'Formato: 1 bit de sinal · 8 bits de expoente (excesso de 127) · 23 bits de significando.',
+    dica:'Normalize para 1,xxx × 2^e. O campo do expoente guarda e + 127.',
+    campos:[
+      {label:'Bit de sinal (0 ou 1)', ph:'0 ou 1', check: chkInt(sinalNeg?1:0,10), resp:String(sinalNeg?1:0)},
+      {label:'Expoente armazenado (decimal)', ph:'ex.: 129', check: chkInt(arm,10), resp:String(arm)}
+    ],
+    exp:'|'+String(v).replace('.',',')+'| normalizado ≈ 1,… × 2^'+e+' → expoente armazenado = '+e+' + 127 = <code>'+arm+'</code>. Sinal = <code>'+(sinalNeg?1:0)+'</code> ('+(sinalNeg?'negativo':'positivo')+').'
+  };
+}
+function g7_formatos(){
+  const formatos = [
+    {n:'precisão simples (32 bits)', s:1, e:8, m:23},
+    {n:'precisão dupla (64 bits)', s:1, e:11, m:52},
+    {n:'precisão estendida (80 bits)', s:1, e:15, m:64}
+  ];
+  const f = pick(formatos);
+  const campo = pick(['expoente','significando']);
+  const valor = campo==='expoente'?f.e:f.m;
+  return {
+    tag:'Formatos IEEE 754', tipo:'texto', base:10,
+    enun:'No formato de '+V(f.n)+', quantos bits tem o campo de '+campo+'?',
+    ctx:'Os três formatos do padrão IEEE 754 sempre reservam 1 bit para o sinal; o resto se divide entre expoente e significando.',
+    dica:'Quanto maior o formato, mais bits sobram para ambos os campos, mas nem sempre na mesma proporção.',
+    check: chkInt(valor,10), resp:String(valor),
+    exp:'Na '+f.n+': 1 bit de sinal + <code>'+f.e+' bits de expoente</code> + <code>'+f.m+' bits de significando</code>.'
+  };
+}
+function g7_overUnder(){
+  const opts = shuffle([
+    {t:'Overflow: número grande demais para o expoente → ±Infinito. Underflow: número pequeno demais → zero ou subnormal.', ok:true},
+    {t:'Overflow e underflow são sinônimos — os dois sempre resultam em NaN.', ok:false},
+    {t:'Overflow é erro de sinal; underflow é erro de significando — nenhum dos dois tem relação com o expoente.', ok:false},
+    {t:'Overflow acontece só com números negativos; underflow, só com positivos.', ok:false}
+  ]);
+  return {
+    tag:'Overflow vs. underflow', tipo:'escolha',
+    enun:'Qual a diferença entre overflow e underflow em ponto flutuante IEEE 754?',
+    dica:'Um dos dois é "grande demais"; o outro é "pequeno demais para o menor valor representável".',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Overflow: o valor excede a capacidade do expoente (grande demais) → resulta em ±Infinito. Underflow: o valor absoluto é menor que o menor número representável → resulta em zero ou em um número subnormal.'
+  };
+}
+function g7_bcd(){
+  const n = R(10,99);
+  const d1 = Math.floor(n/10), d2 = n%10;
+  const bcd = bin(d1,4)+' '+bin(d2,4);
+  return {
+    tag:'BCD — precisão exata', tipo:'texto',
+    enun:'Em BCD (Binary Coded Decimal), cada algarismo decimal vira 4 bits separados. Como fica '+V(String(n))+' em BCD?',
+    ctx:'Bancos e sistemas financeiros usam essa lógica (ou equivalente, em tipos DECIMAL/NUMERIC) para nunca arredondar um centavo.',
+    dica:'Codifique cada algarismo (dezena e unidade) em 4 bits, separadamente — não é a mesma coisa que converter o número inteiro para binário puro!',
+    check: raw => String(raw||'').replace(/[^01]/g,'') === bin(d1,4)+bin(d2,4), resp:bcd,
+    exp: n+' = dezena '+d1+' ('+bin(d1,4)+') + unidade '+d2+' ('+bin(d2,4)+') → <code>'+bcd+'</code> — repare que isso é diferente do binário puro de '+n+' (<code>'+bin(n,8)+'</code>).'
+  };
+}
+
+/* =======================================================================
+   GERADORES — Estação 8: Codificação de Caracteres
+   ======================================================================= */
+const PALAVRAS = ['BIT','BYTE','HEX','CODE','DADO','ASCII','OCTAL','WORD','CHAR','DIGITO'];
+function g8_asciiBits(){
+  const opts = shuffle([
+    {t:'7 bits → 128 combinações', ok:true},
+    {t:'8 bits → 256 combinações', ok:false},
+    {t:'6 bits → 64 combinações', ok:false},
+    {t:'4 bits → 16 combinações', ok:false}
+  ]);
+  return {
+    tag:'ASCII', tipo:'escolha',
+    enun:'O ASCII original (definido pela ANSI) usa quantos bits, e quantas combinações isso permite?',
+    ctx:'O ASCII estendido (8 bits, 256 combinações) veio depois, para acentos e símbolos — mas de forma não padronizada entre fabricantes.',
+    dica:'128 combinações é a resposta certa — que potência de 2 dá esse valor?',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'ASCII usa <code>7 bits → 2⁷ = 128</code> combinações, cobrindo letras, dígitos, pontuação e caracteres de controle.'
+  };
+}
+function g8_codifica(){
+  const ch = pick('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''));
+  const c = ch.charCodeAt(0);
+  return {
+    tag:'Texto → ASCII', tipo:'texto', base:10,
+    enun:'Qual é o código ASCII, em decimal, do caractere '+V(ch)+'?',
+    dica:'"A" vale 65; as letras seguem em ordem alfabética a partir daí.',
+    check: chkInt(c,10), resp:String(c),
+    exp:'<code>'+ch+'</code> = <code>'+c+'</code>₁₀ = <code>'+bin(c,8)+'</code>₂ (65 + '+(c-65)+')'
+  };
+}
+function g8_decodifica(){
+  const w = pick(PALAVRAS);
+  const bytes = w.split('').map(ch=>hx(ch.charCodeAt(0),2)).join(' ');
+  return {
+    tag:'ASCII → Texto', tipo:'texto',
+    enun:'Esta sequência de bytes chegou em hexadecimal: '+V(bytes)+'. Que palavra ela representa?',
+    ctx:'Use a tabela ASCII no botão "Tabelas" se precisar.',
+    dica:'Converta cada byte para decimal e procure o caractere correspondente.',
+    check: chkTexto(w), resp:w,
+    exp:w.split('').map(ch=>'<code>'+hx(ch.charCodeAt(0),2)+'</code>='+ch.charCodeAt(0)+'→'+ch).join(' · ')+' = <b>'+w+'</b>'
+  };
+}
+function g8_bit5(){
+  const opts = shuffle([
+    {t:'É o bit de peso 32 — ligá-lo transforma maiúscula em minúscula.', ok:true},
+    {t:'É o bit de paridade usado na transmissão.', ok:false},
+    {t:'É o bit de sinal do caractere.', ok:false},
+    {t:'É coincidência: não há relação binária entre os dois códigos.', ok:false}
+  ]);
+  return {
+    tag:'Estrutura do ASCII', tipo:'escolha',
+    enun:'Em ASCII, "A" = 65 (0100 0001) e "a" = 97 (0110 0001). O que essa diferença de 32 significa?',
+    dica:'Compare os dois padrões de bits — só uma posição muda.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'A diferença está no bit de peso <code>32</code> (bit 5). A tabela ASCII foi projetada assim de propósito: trocar entre maiúscula e minúscula é uma única operação lógica, sem precisar de tabela de tradução.'
+  };
+}
+function g8_utf8(){
+  const exemplos = [{ch:'a',bytes:1},{ch:'á',bytes:2},{ch:'ç',bytes:2},{ch:'€',bytes:3},{ch:'中',bytes:3},{ch:'😀',bytes:4}];
+  const ex = pick(exemplos);
+  const opts = shuffle([1,2,3,4].map(String));
+  return {
+    tag:'UTF-8', tipo:'escolha',
+    enun:'Em UTF-8, quantos bytes o caractere '+V(ex.ch)+' ocupa?',
+    ctx:'UTF-8 é de largura variável e mantém compatibilidade total com ASCII no primeiro byte.',
+    dica:'Caracteres ASCII usam 1 byte; acentos e outros alfabetos usam mais.',
+    opcoes: opts, correta: opts.indexOf(String(ex.bytes)),
+    exp:'<code>'+ex.ch+'</code> ocupa <code>'+ex.bytes+' byte(s)</code> em UTF-8.'
+  };
+}
+function g8_nomeParaAscii(){
+  const nome = S.primeiroNome;
+  const codigos = nome.split('').map(ch=>ch.charCodeAt(0));
+  return {
+    tag:'Seu nome → ASCII', tipo:'texto',
+    enun:'Escreva, em ordem e separados por espaço, os códigos ASCII decimais de cada letra do seu primeiro nome: '+V(nome)+'.',
+    ctx:'Use a tabela ASCII no botão "Tabelas" se precisar — "A"=65, e as letras seguem em ordem alfabética a partir daí.',
+    dica:'São '+codigos.length+' números, um para cada letra, exatamente na ordem do nome.',
+    check: chkNums(codigos), resp: codigos.join(' '),
+    exp: nome.split('').map((ch,i)=>'<code>'+ch+'</code>='+codigos[i]).join(' · ')+' → é exatamente assim que o seu nome fica guardado byte a byte na memória.'
+  };
+}
+function g8_nomeDeBinario(){
+  const nome = S.primeiroNome;
+  const bytes = nome.split('').map(ch=>hx(ch.charCodeAt(0),2)).join(' ');
+  return {
+    tag:'ASCII → Seu nome', tipo:'texto',
+    enun:'Esta sequência de bytes em hexadecimal chegou pela rede: '+V(bytes)+'. Decodifique — de quem é esse nome? (dica: é o seu!)',
+    dica:'Converta cada byte hex para decimal e procure o caractere na tabela ASCII.',
+    check: chkTexto(nome), resp:nome,
+    exp: nome.split('').map(ch=>'<code>'+hx(ch.charCodeAt(0),2)+'</code>='+ch.charCodeAt(0)+'→'+ch).join(' · ')+' = <b>'+nome+'</b>'
+  };
+}
+function g8_matriculaDigitoAscii(){
+  const mat = S.matricula;
+  const idx = R(0, mat.length-1);
+  const digito = mat[idx];
+  const codigo = digito.charCodeAt(0);
+  return {
+    tag:'Matrícula em ASCII', tipo:'texto', base:10,
+    enun:'Na tabela ASCII, os dígitos 0–9 são caracteres como qualquer outro, com códigos de 48 a 57. Qual é o código ASCII decimal do dígito '+V(digito)+' (posição '+(idx+1)+' da sua matrícula, '+mat+')?',
+    ctx:'Isso mostra por que "45" como texto (dois caracteres ASCII) não é a mesma coisa que 45 como número binário — são representações completamente diferentes de dados diferentes.',
+    dica:'O dígito "0" vale 48; some o próprio dígito a esse valor.',
+    check: chkInt(codigo,10), resp:String(codigo),
+    exp:'"0"=48 na tabela ASCII, então "'+digito+'" = 48+'+digito+' = <code>'+codigo+'</code>. Guardar "'+mat+'" como texto ocupa '+mat.length+' bytes; guardar o número '+mat+' em binário puro ocupa bem menos.'
+  };
+}
+function g8_unicodeTrivia(){
+  const opts = shuffle([
+    {t:'Uma tabela universal que atribui um número único (code point) a praticamente todo sistema de escrita do mundo, incluindo emojis.', ok:true},
+    {t:'Uma versão mais rápida do ASCII, sem suporte a novos caracteres.', ok:false},
+    {t:'Um formato de compressão de texto, como o ZIP.', ok:false},
+    {t:'O sucessor direto do UTF-8, que substitui a codificação em bytes.', ok:false}
+  ]);
+  return {
+    tag:'O que é Unicode', tipo:'escolha',
+    enun:'O que exatamente é o Unicode?',
+    ctx:'UTF-8 é a FORMA de codificar os code points do Unicode em bytes — os dois conceitos são relacionados, mas não são a mesma coisa.',
+    dica:'Unicode é a tabela; UTF-8 é uma forma de codificá-la em bytes.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Unicode é a tabela universal de correspondência símbolo→número, cobrindo mais de 150.000 caracteres, de todos os alfabetos a emojis. UTF-8 é apenas uma das formas (a mais usada) de transformar esses números em bytes.'
+  };
+}
+
+/* =======================================================================
+   ESTAÇÕES (trilha evolutiva — ordem fixa, dificuldade crescente)
+   ======================================================================= */
+const STAGES = [
+  { id:'e1', num:1, nome:'Fundamentos', cor:'#4FE0B0',
+    desc:'Bit, byte e a fórmula 2ⁿ.',
+    pool:[g1_sigla,g1_estados,g1_capacidade,g1_byteFaixa,g1_idadeBits,g1_nesCores,g1_atariRam,g1_word] },
+  { id:'e2', num:2, nome:'Sistemas de Numeração', cor:'#E8A33D',
+    desc:'Base, algarismos e as regras universais.',
+    pool:[g2_ondeUsa,g2_algarismos,g2_msblsb,g2_posicional,g2_maxComNDigitos,g2_chmod,g2_subscrito] },
+  { id:'e3', num:3, nome:'Decimal ⇄ Outras Bases', cor:'#59C3F0',
+    desc:'Divisões sucessivas e notação polinomial.',
+    pool:[g3_bits,g3_decHex,g3_binDec,g3_hexDec,g3_decOct,g3_idadeBin,g3_idadeHex,g3_matriculaBase] },
+  { id:'e4', num:4, nome:'Agrupamento de Bits', cor:'#9A7BFF',
+    desc:'Binário ⇄ octal/hex, e cores em hexadecimal.',
+    pool:[g4_binHex,g4_binOct,g4_hexBin,g4_octHexEspecial,g4_corReconhece,g4_corComponente,g4_nesPaleta] },
+  { id:'e5', num:5, nome:'Números Fracionários', cor:'#FF6BA6',
+    desc:'Frações binárias e por que 0,8 não termina.',
+    pool:[g5_fracBinDec,g5_fracDecBin,g5_misto,g5_dizima,g5_alphaGame,g5_pontoFixoUso] },
+  { id:'e6', num:6, nome:'Números Negativos', cor:'#F0A84B',
+    desc:'Sinal-magnitude, complemento de 1 e de 2.',
+    pool:[g6_sinalMag,g6_c1,g6_c2,g6_vantagens,g6_menos128,g6_excesso128,g6_gandhi,g6_idadeC2] },
+  { id:'e7', num:7, nome:'Ponto Flutuante', cor:'#F06B6B',
+    desc:'Normalização e o padrão IEEE 754.',
+    pool:[g7_pontoFixoVsFlutuante,g7_010203,g7_casosEspeciais,g7_normalizar,g7_ieeeCompleto,g7_formatos,g7_overUnder,g7_bcd] },
+  { id:'e8', num:8, nome:'Codificação de Caracteres', cor:'#7EE081',
+    desc:'ASCII, UTF-8 — e o seu próprio nome em bits.',
+    pool:[g8_asciiBits,g8_codifica,g8_decodifica,g8_bit5,g8_utf8,g8_nomeParaAscii,g8_nomeDeBinario,g8_matriculaDigitoAscii,g8_unicodeTrivia] },
+  { id:'boss', num:'★', nome:'Certificação Final', cor:'#d4304f', boss:true,
+    desc:'Questões sorteadas de todas as estações, pontuação dobrada.',
+    pool:[] }
+];
+const PERGUNTAS_BOSS = 12;
+const RANKS = [
+  'Recruta dos Bits','Aprendiz de Bases','Tradutor Binário','Decodificador Hexa',
+  'Analista de Frações','Guardião dos Sinais','Engenheiro de Precisão','Poliglota Digital',
+  'Mestre da Representação de Dados'
+];
+
+/* =======================================================================
+   ESTADO
+   ======================================================================= */
+let S = null;
+function novoJogo(nome, turma, idadeRaw, matriculaRaw){
+  const idadeNum = parseInt(String(idadeRaw||'').replace(/\D/g,''),10);
+  const idade = (Number.isFinite(idadeNum) && idadeNum>=14 && idadeNum<=90) ? idadeNum : R(17,45);
+  const matDigits = String(matriculaRaw||'').replace(/\D/g,'');
+  const matricula = matDigits.length>=3 ? matDigits.slice(0,10) : String(R(10000,9999999));
+  const primeiroNomeBruto = String(nome||'').trim().split(/\s+/)[0]||'ALUNO';
+  const primeiroNome = (primeiroNomeBruto.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z]/g,'')||'ALUNO').slice(0,8);
+  S = { nome:nome||'operador', turma:turma, idade:idade, matricula:matricula, primeiroNome:primeiroNome,
+        xp:0, acertos:0, total:0,
+        estagios:{}, estagioAtual:null, fila:[], qi:0, inicio:Date.now(), dicas:0, codigo:null };
+  STAGES.forEach(f => S.estagios[f.id] = {feito:false, acertos:0, total:0, xp:0});
+}
+function nivelAtual(){ return STAGES.filter(f=>!f.boss && S.estagios[f.id].feito).length; }
+function atualizarStatus(){
+  $('stXp').textContent = nf(S.xp);
+  $('stPre').textContent = S.total ? Math.round(100*S.acertos/S.total)+'%' : '—';
+  $('stNivel').textContent = nivelAtual();
+}
+function mostrar(tela){
+  ['telaInicio','telaTrilha','telaJogo','telaFase','telaCert'].forEach(t => $(t).classList.toggle('hidden', t!==tela));
+  $('bus').classList.toggle('hidden', tela!=='telaJogo');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* =======================================================================
+   TRILHA
+   ======================================================================= */
+function renderTrilha(){
+  const completas = nivelAtual();
+  let html = '';
+  STAGES.forEach((f,i)=>{
+    if(i>0) html += '<span class="arrow">▸</span>';
+    const st = f.boss ? null : S.estagios[f.id];
+    let estado;
+    if(f.boss){
+      estado = completas>=8 ? (S.estagios['boss'].feito?'completo':'atual') : 'locked';
+    } else {
+      estado = st.feito ? 'completo' : (i===completas ? 'atual' : 'locked');
+    }
+    const stars = st && st.feito && st.total ? '★'.repeat(st.acertos/st.total>=0.9?3:(st.acertos/st.total>=0.6?2:1)) : '';
+    const starsGhost = stars ? '☆'.repeat(3-stars.length) : '';
+    html += '<button class="node'+(f.boss?' boss':'')+(estado==='locked'?' locked':'')+(estado==='atual'?' atual':'')+'" data-fase="'+f.id+'" style="--nc:'+f.cor+'"'+(estado==='locked'?' disabled':'')+'>'+
+      '<span class="num">'+(f.boss?'FINAL':'ESTAÇÃO '+f.num)+'</span>'+
+      '<div class="nome">'+f.nome+'</div>'+
+      '<div class="desc">'+f.desc+'</div>'+
+      (stars ? '<div class="estrelas">'+stars+starsGhost+'</div>' : (estado==='locked' ? '<div class="estrelas" style="color:var(--dim)">🔒</div>' : ''))+
+      '</button>';
+  });
+  $('trilha').innerHTML = html;
+  Array.from($('trilha').querySelectorAll('.node')).forEach(b=>{
+    if(b.disabled) return;
+    b.onclick = () => iniciarFase(b.dataset.fase);
+  });
+  $('trilhaMsg').innerHTML = completas < 8
+    ? 'Nível atual: <b style="color:var(--copper)">'+RANKS[completas]+'</b> — '+completas+' de 8 estações concluídas.'
+    : 'Todas as 8 estações concluídas — nível <b style="color:var(--copper)">'+RANKS[8]+'</b>. A certificação final está liberada.';
+}
+
+/* =======================================================================
+   ESTAÇÃO / PERGUNTAS
+   ======================================================================= */
+function iniciarFase(id){
+  const f = STAGES.find(x=>x.id===id);
+  S.estagioAtual = f;
+  S.qi = 0; S.faseAcertos = 0; S.faseXp = 0;
+  if(f.boss){
+    let pool = [];
+    STAGES.filter(x=>!x.boss).forEach(x => pool = pool.concat(x.pool));
+    S.fila = shuffle(pool).slice(0,PERGUNTAS_BOSS).map(g=>g());
+  }else{
+    S.fila = f.pool.map(g=>g());
+  }
+  $('jgFase').textContent = (f.boss?'FINAL — ':'ESTAÇÃO '+f.num+' — ')+f.nome.toUpperCase();
+  mostrar('telaJogo');
+  renderPergunta();
+}
+
+let avaliar = null, respondida = false;
+
+function renderPergunta(){
+  respondida = false;
+  const q = S.fila[S.qi];
+  const boss = S.estagioAtual.boss;
+  $('jgTag').textContent = (boss?'FINAL · ':'')+q.tag+'  ·  '+(S.qi+1)+'/'+S.fila.length;
+  $('jgProg').style.width = (100*S.qi/S.fila.length)+'%';
+  $('jgEnun').innerHTML = q.enun;
+  $('jgCtx').innerHTML = q.ctx||'';
+  $('jgCtx').classList.toggle('hidden', !q.ctx);
+  $('jgFb').classList.add('hidden');
+  $('btVerificar').textContent = 'Verificar';
+  $('btVerificar').disabled = false;
+  $('btDica').classList.remove('hidden');
+  $('btDica').disabled = false;
+  pintarBus(0);
+  montarArea(q);
+}
+
+function montarArea(q){
+  const area = $('jgArea');
+  area.innerHTML = '';
+  avaliar = () => false;
+
+  if(q.tipo==='bits'){
+    const row = document.createElement('div'); row.className='bitrow';
+    const estado = new Array(q.bits).fill(0);
+    PESOS.forEach((p,i)=>{
+      const cell = document.createElement('div'); cell.className='bitcell';
+      const peso = document.createElement('span'); peso.className='peso'; peso.textContent = p;
+      const b = document.createElement('button'); b.className='bitbtn'; b.textContent='0';
+      b.setAttribute('aria-label','bit de peso '+p);
+      b.onclick = () => {
+        if(respondida) return;
+        estado[i] = estado[i] ? 0 : 1;
+        b.textContent = estado[i];
+        b.classList.toggle('on', !!estado[i]);
+        pintarBus(parseInt(estado.join(''),2));
+        beep(estado[i]?520:380,.04);
+      };
+      cell.appendChild(peso); cell.appendChild(b); row.appendChild(cell);
+    });
+    area.appendChild(row);
+    avaliar = () => parseInt(estado.join(''),2) === q.alvo;
+    q.resp = grp(bin(q.alvo,8),4);
+  }
+
+  else if(q.tipo==='texto'){
+    const f = document.createElement('div'); f.className='field';
+    const inp = document.createElement('input');
+    inp.type='text'; inp.id='inResp'; inp.autocomplete='off'; inp.placeholder='sua resposta';
+    f.appendChild(inp); area.appendChild(f);
+    inp.addEventListener('input', ()=>{
+      if(q.base){
+        const s = limpar(inp.value).toUpperCase();
+        const re = q.base===2?/^[01]+$/:q.base===8?/^[0-7]+$/:q.base===16?/^[0-9A-F]+$/:/^\d+$/;
+        if(re.test(s)){ const v = parseInt(s,q.base); if(v<=255) pintarBus(v); }
+      }
+    });
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); acaoPrincipal(); } });
+    setTimeout(()=>inp.focus(),60);
+    avaliar = () => q.check(inp.value);
+  }
+
+  else if(q.tipo==='multi'){
+    const inputs = [];
+    q.campos.forEach((c,i)=>{
+      const f = document.createElement('div'); f.className='field';
+      const l = document.createElement('label'); l.textContent = c.label;
+      const inp = document.createElement('input');
+      inp.type='text'; inp.autocomplete='off'; inp.placeholder=c.ph||'';
+      inp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); acaoPrincipal(); } });
+      f.appendChild(l); f.appendChild(inp); area.appendChild(f);
+      inputs.push(inp);
+      if(i===0) setTimeout(()=>inp.focus(),60);
+    });
+    avaliar = () => q.campos.every((c,i)=> c.check(inputs[i].value));
+    q.resp = q.campos.map(c=>c.label.split('(')[0].trim()+': '+c.resp).join('  ·  ');
+  }
+
+  else if(q.tipo==='escolha'){
+    const box = document.createElement('div'); box.className='opts';
+    let sel = -1;
+    q.opcoes.forEach((t,i)=>{
+      const b = document.createElement('button'); b.className='opt';
+      b.innerHTML = '<span class="mk">'+String.fromCharCode(65+i)+'</span><span>'+t+'</span>';
+      b.onclick = () => {
+        if(respondida) return;
+        sel = i;
+        Array.from(box.children).forEach((c,j)=>c.classList.toggle('sel', j===i));
+        beep(440,.04);
+      };
+      box.appendChild(b);
+    });
+    area.appendChild(box);
+    avaliar = () => sel === q.correta;
+    q.resp = String.fromCharCode(65+q.correta)+') '+q.opcoes[q.correta];
+  }
+}
+
+function acaoPrincipal(){
+  if(respondida) proxima(); else resolver(avaliar());
+}
+
+function resolver(ok){
+  if(respondida) return;
+  respondida = true;
+  const q = S.fila[S.qi];
+  const boss = S.estagioAtual.boss;
+  const mult = boss ? 2 : 1;
+
+  if(q.tipo==='bits') pintarBus(q.alvo);
+
+  S.total++; S.estagios[S.estagioAtual.id].total++;
+  let ganho = 0;
+  if(ok){
+    S.acertos++; S.estagios[S.estagioAtual.id].acertos++; S.faseAcertos++;
+    ganho = (100 + R(0,20)) * mult;
+    S.xp += ganho; S.faseXp += ganho; S.estagios[S.estagioAtual.id].xp += ganho;
+    somOk(); particulas();
+  }else{
+    somErro();
+  }
+  atualizarStatus();
+
+  const fb = $('jgFb');
+  fb.className = 'fb '+(ok?'ok':'no');
+  fb.innerHTML =
+    '<div class="t">'+(ok ? 'CORRETO — +'+nf(ganho)+' pts' : 'AINDA NÃO')+'</div>'+
+    '<div class="exp">'+(ok ? '' : '<b>Resposta correta:</b> <span class="mono">'+(q.resp||'')+'</span><br>')+q.exp+'</div>';
+  fb.classList.remove('hidden');
+  $('btVerificar').textContent = (S.qi+1 < S.fila.length) ? 'Próxima pergunta' : 'Concluir estação';
+  $('btDica').disabled = true;
+  $('jgProg').style.width = (100*(S.qi+1)/S.fila.length)+'%';
+  fb.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function proxima(){
+  S.qi++;
+  if(S.qi >= S.fila.length) fimFase();
+  else renderPergunta();
+}
+
+function fimFase(){
+  const f = S.estagioAtual, st = S.estagios[f.id];
+  const acertos = S.faseAcertos, total = S.fila.length;
+  st.feito = true; st.acertos = acertos; st.total = total;
+  atualizarStatus();
+  somFase();
+  const perfeito = acertos===total;
+  $('fzTit').textContent = f.boss ? 'CERTIFICAÇÃO CONCLUÍDA' : (perfeito ? 'ESTAÇÃO CONCLUÍDA — SEM ERROS' : 'ESTAÇÃO CONCLUÍDA');
+  $('fzMsg').textContent = f.boss
+    ? 'Você respondeu '+acertos+' de '+total+' questões da certificação final.'
+    : 'Estação '+f.nome+': '+acertos+' de '+total+' corretas. '+(perfeito?'Mandou bem!':'Refazer gera outros valores, se quiser praticar mais.');
+  $('fzRank').innerHTML = f.boss ? '' : 'Nível atualizado: <b>'+RANKS[nivelAtual()]+'</b>';
+  $('fzAc').textContent = acertos+'/'+total;
+  $('fzPt').textContent = nf(S.faseXp);
+  mostrar('telaFase');
+  if(f.boss){ setTimeout(()=>telaCertificacao(), 600); }
+}
+
+/* =======================================================================
+   CERTIFICAÇÃO FINAL
+   ======================================================================= */
+function gerarCodigo(){
+  const dataStr = new Date().toISOString().slice(0,10);
+  const base = (S.nome.toUpperCase().replace(/\s+/g,'')+'|'+S.turma+'|'+dataStr+'|'+S.xp+'|'+S.acertos+'/'+S.total+'|UNIDAVI-ARQCOMP-A0203');
+  let h1 = 5381, h2 = 52711;
+  for(let i=0;i<base.length;i++){
+    const c = base.charCodeAt(i);
+    h1 = ((h1*33) ^ c) >>> 0;
+    h2 = ((h2*31) + c) >>> 0;
+  }
+  const code = ((h1 ^ (h2<<1)) >>> 0);
+  let s = code.toString(36).toUpperCase().padStart(7,'0').slice(0,7);
+  return s.slice(0,3)+'-'+s.slice(3,7)+' · '+dataStr.slice(5).replace('-','')  ;
+}
+function textoRelatorio(){
+  const pc = S.total ? Math.round(100*S.acertos/S.total) : 0;
+  let t = 'BIT LAB — Trilha de Conversões | Arquitetura de Computadores — Aulas 02 e 03 — UNIDAVI\n';
+  t += 'Nome: '+S.nome+'\n';
+  t += 'Turma: '+S.turma+'\n';
+  t += 'Matrícula: '+S.matricula+'\n';
+  t += 'Data/Hora: '+new Date().toLocaleString('pt-BR')+'\n';
+  t += 'Nível final: '+RANKS[8]+'\n';
+  t += 'Resultado geral: '+S.acertos+'/'+S.total+' ('+pc+'%) — '+nf(S.xp)+' pontos\n\n';
+  t += 'Desempenho por estação:\n';
+  STAGES.forEach(f=>{
+    const st = S.estagios[f.id];
+    t += '  - '+f.nome+': '+(st.total ? st.acertos+'/'+st.total : 'não realizada')+'\n';
+  });
+  t += '\nCódigo de presença: '+S.codigo+'\n';
+  t += 'Envie este relatório ao professor para confirmar a presença nesta atividade assíncrona.';
+  return t;
+}
+function telaCertificacao(){
+  if(!S.codigo) S.codigo = gerarCodigo();
+  const pc = S.total ? Math.round(100*S.acertos/S.total) : 0;
+  $('certRank').textContent = RANKS[8];
+  $('certMsg').innerHTML = '<b>'+S.nome+'</b> ('+S.turma+') — '+S.acertos+' acertos em '+S.total+' questões ('+pc+'%), '+nf(S.xp)+' pontos totais.';
+  $('certBars').innerHTML = STAGES.filter(f=>!f.boss).map(f=>{
+    const st = S.estagios[f.id];
+    const p = st.total ? Math.round(100*st.acertos/st.total) : 0;
+    return '<div class="barrow"><span>'+f.nome+'</span><span class="track"><i style="width:'+p+'%"></i></span><span class="pc">'+(st.total? p+'%' : '—')+'</span></div>';
+  }).join('');
+  $('codeBox').textContent = S.codigo;
+  $('relTxt').textContent = textoRelatorio();
+  mostrar('telaCert');
+}
+
+/* =======================================================================
+   EVENTOS
+   ======================================================================= */
+$('segTurma').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  Array.from($('segTurma').children).forEach(c=>c.classList.toggle('on', c===b));
+});
+$('btComecar').onclick = () => {
+  const nome = $('inNome').value.trim();
+  if(!nome){ $('inNome').focus(); $('inNome').style.borderColor = 'var(--err)'; return; }
+  const turma = $('segTurma').querySelector('.on').dataset.turma;
+  novoJogo(nome, turma, $('inIdade').value, $('inMatricula').value);
+  atualizarStatus();
+  renderTrilha();
+  mostrar('telaTrilha');
+  beep(660,.09); setTimeout(()=>beep(880,.12),90);
+};
+$('btVerificar').onclick = acaoPrincipal;
+$('btDica').onclick = () => {
+  if(respondida) return;
+  const q = S.fila[S.qi];
+  S.xp = Math.max(0, S.xp-30); S.dicas++;
+  atualizarStatus();
+  const fb = $('jgFb');
+  fb.className = 'fb';
+  fb.innerHTML = '<div class="t" style="color:var(--copper)">DICA — −30 pts</div><div class="exp">'+q.dica+'</div>';
+  fb.classList.remove('hidden');
+  $('btDica').disabled = true;
+};
+$('btSair').onclick = () => { renderTrilha(); mostrar('telaTrilha'); };
+$('btVoltarTrilha').onclick = () => {
+  renderTrilha();
+  if(S.estagioAtual && S.estagioAtual.boss && S.estagios['boss'].feito) telaCertificacao();
+  else mostrar('telaTrilha');
+};
+$('btRefazer').onclick = () => iniciarFase(S.estagioAtual.id);
+$('btReiniciar').onclick = () => { mostrar('telaInicio'); pintarBus(0); };
+$('btCopiar').onclick = () => {
+  const t = textoRelatorio();
+  navigator.clipboard.writeText(t).then(
+    ()=>{ $('btCopiar').textContent = 'Relatório copiado'; setTimeout(()=>$('btCopiar').textContent='Copiar relatório',2200); },
+    ()=>{}
+  );
+};
+const abrirTab = ()=> $('drawer').classList.remove('hidden');
+$('btTab').onclick = abrirTab;
+$('btTab2').onclick = abrirTab;
+$('btFechaTab').onclick = () => $('drawer').classList.add('hidden');
+$('btSom').onclick = () => { somOn = !somOn; $('btSom').textContent = 'Som: '+(somOn?'on':'off'); };
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape') $('drawer').classList.add('hidden');
+  if(e.key==='Enter' && !$('telaJogo').classList.contains('hidden')){
+    if(document.activeElement && document.activeElement.tagName==='INPUT') return;
+    e.preventDefault(); acaoPrincipal();
+  }
+});
+</script>
+</body>
+</html>
