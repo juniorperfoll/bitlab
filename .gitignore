@@ -1,0 +1,2 @@
+# Agent-local settings/credentials — never commit
+.claude/settings.local.json
