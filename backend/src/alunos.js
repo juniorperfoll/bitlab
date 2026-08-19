@@ -1,5 +1,5 @@
 import { listAlunosComHabilitacoes, upsertAluno, getAlunoByMatricula, getAlunoByEmail, setSenhaAluno, setTokenAluno } from './db.js';
-import { TURMAS_VALIDAS } from './habilitacoes.js';
+import { TURMAS_VALIDAS, MENSAGEM_TURMA_INVALIDA } from './habilitacoes.js';
 import { gerarHashSenha, verificarSenha, gerarToken } from './auth.js';
 
 const DOMINIO_INSTITUCIONAL = '@unidavi.edu.br';
@@ -72,7 +72,7 @@ export function importarHandler(req, res) {
       return;
     }
     if (!TURMAS_VALIDAS.includes(dados.turma)) {
-      rejeitados.push({ linha: numeroLinha, motivo: 'Turma inválida. Use T33F2 ou T34F2.' });
+      rejeitados.push({ linha: numeroLinha, motivo: MENSAGEM_TURMA_INVALIDA });
       return;
     }
     if (!dados.email.toLowerCase().endsWith(DOMINIO_INSTITUCIONAL)) {
@@ -140,7 +140,7 @@ export function trocarSenhaHandler(req, res) {
 }
 
 // POST /api/alunos/cadastro (público) — cria/atualiza cadastro do aluno.
-// FR-016: só e-mail do domínio institucional. FR-013: só T33F2/T34F2.
+// FR-016: só e-mail do domínio institucional. FR-013: turma precisa estar em TURMAS_VALIDAS.
 export function cadastroHandler(req, res) {
   const { nome, idade, matricula, turma, email } = req.body || {};
   if (!nome || !matricula || !turma || !email || !idade) {
@@ -148,7 +148,7 @@ export function cadastroHandler(req, res) {
   }
 
   if (!TURMAS_VALIDAS.includes(turma)) {
-    return res.status(400).json({ mensagem: 'Turma inválida. Use T33F2 ou T34F2.' });
+    return res.status(400).json({ mensagem: MENSAGEM_TURMA_INVALIDA });
   }
 
   if (!String(email).toLowerCase().endsWith(DOMINIO_INSTITUCIONAL)) {

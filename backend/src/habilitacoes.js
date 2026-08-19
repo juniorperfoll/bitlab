@@ -7,8 +7,9 @@ import {
   getHabilitacaoResolvida,
 } from './db.js';
 
-export const TURMAS_VALIDAS = ['T33F2', 'T34F2'];
+export const TURMAS_VALIDAS = ['T33F2', 'T34F2', 'TLPP'];
 export const TRILHAS_VALIDAS = ['arquitetura', 'linguagens'];
+export const MENSAGEM_TURMA_INVALIDA = `Turma inválida. Use ${TURMAS_VALIDAS.join(', ')}.`;
 
 function turmaValida(turma) {
   return TURMAS_VALIDAS.includes(turma);
@@ -21,7 +22,7 @@ function trilhaValida(trilha) {
 // POST /api/turmas/:turma/habilitacoes (auth) — FR-007, SC-001.
 export function habilitarTurmaHandler(req, res) {
   if (!turmaValida(req.params.turma)) {
-    return res.status(400).json({ mensagem: 'Turma inválida. Use T33F2 ou T34F2.' });
+    return res.status(400).json({ mensagem: MENSAGEM_TURMA_INVALIDA });
   }
 
   const { trilha } = req.body || {};
