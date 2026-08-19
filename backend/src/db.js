@@ -8,13 +8,24 @@ import { fileURLToPath } from 'node:url';
 import Database from 'better-sqlite3';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const SCHEMA_PATH = path.join(__dirname, '..', 'migrations', '0001_init.sql');
+const MIGRATIONS_DIR = path.join(__dirname, '..', 'migrations');
 
 // `dbPath` pode ser um caminho de arquivo ou ':memory:' (usado nos testes).
+// Aplica todas as migrações em migrations/ em ordem, cada uma só uma vez —
+// necessário porque `ALTER TABLE ADD COLUMN` (0002+) não é idempotente no SQLite.
 export function abrirDb(dbPath) {
   const db = new Database(dbPath);
   db.pragma('journal_mode = WAL');
-  db.exec(fs.readFileSync(SCHEMA_PATH, 'utf8'));
+  db.exec(
+    "CREATE TABLE IF NOT EXISTS _migracoes (nome TEXT PRIMARY KEY, aplicada_em TEXT NOT NULL DEFAULT (datetime('now')))"
+  );
+  const aplicadas = new Set(db.prepare('SELECT nome FROM _migracoes').all().map((r) => r.nome));
+  const arquivos = fs.readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith('.sql')).sort();
+  for (const arquivo of arquivos) {
+    if (aplicadas.has(arquivo)) continue;
+    db.exec(fs.readFileSync(path.join(MIGRATIONS_DIR, arquivo), 'utf8'));
+    db.prepare('INSERT INTO _migracoes (nome) VALUES (?)').run(arquivo);
+  }
   return db;
 }
 
@@ -55,6 +66,32 @@ export function getAlunoByMatricula(db, matricula) {
   return db.prepare('SELECT * FROM alunos WHERE matricula = ?').get(matricula);
 }
 
+// Login por e-mail (feature 004) — case-insensitive porque nem todo cadastro
+// antigo tem o e-mail salvo em minúsculas (só o domínio é normalizado no cadastro).
+export function getAlunoByEmail(db, email) {
+  return db.prepare('SELECT * FROM alunos WHERE LOWER(email) = LOWER(?)').get(email);
+}
+
+// Credencial/sessão do aluno (feature 002) — mesmo padrão já usado para o
+// professor (setProfessorToken/clearProfessorToken/getProfessorByToken acima).
+export function setSenhaAluno(db, alunoId, senhaHash, senhaSalt, senhaPadraoAtiva) {
+  db.prepare(
+    'UPDATE alunos SET senha_hash = ?, senha_salt = ?, senha_padrao_ativa = ? WHERE id = ?'
+  ).run(senhaHash, senhaSalt, senhaPadraoAtiva ? 1 : 0, alunoId);
+}
+
+export function setTokenAluno(db, alunoId, token) {
+  db.prepare('UPDATE alunos SET token_ativo = ? WHERE id = ?').run(token, alunoId);
+}
+
+export function limparTokenAluno(db, alunoId) {
+  db.prepare('UPDATE alunos SET token_ativo = NULL WHERE id = ?').run(alunoId);
+}
+
+export function getAlunoByToken(db, token) {
+  return db.prepare('SELECT * FROM alunos WHERE token_ativo = ?').get(token);
+}
+
 export function upsertAluno(db, { matricula, nome, idade, turma, email }) {
   db.prepare(
     `INSERT INTO alunos (matricula, nome, idade, turma, email, criado_em, atualizado_em)
@@ -93,6 +130,7 @@ export function listAlunosComHabilitacoes(db) {
       nome: aluno.nome,
       turma: aluno.turma,
       email: aluno.email,
+      senhaPadraoAtiva: aluno.senha_padrao_ativa === 1,
       habilitacoes: resultado,
     };
   });

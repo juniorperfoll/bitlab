@@ -6,8 +6,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { abrirDb } from './db.js';
-import { loginHandler, logoutHandler, autenticarMiddleware } from './auth.js';
-import { cadastroHandler, listarAlunosHandler } from './alunos.js';
+import { loginHandler, logoutHandler, autenticarMiddleware, autenticarAlunoMiddleware } from './auth.js';
+import { cadastroHandler, listarAlunosHandler, importarHandler, redefinirSenhaHandler, alunoLoginHandler, trocarSenhaHandler } from './alunos.js';
 import {
   habilitarTurmaHandler,
   revogarTurmaHandler,
@@ -30,8 +30,12 @@ export function criarApp(dbPath) {
   app.post('/api/login', loginHandler);
   app.post('/api/logout', autenticarMiddleware, logoutHandler);
 
+  app.post('/api/alunos/login', alunoLoginHandler);
+  app.post('/api/alunos/senha', autenticarAlunoMiddleware, trocarSenhaHandler);
   app.post('/api/alunos/cadastro', cadastroHandler);
+  app.post('/api/alunos/importar', autenticarMiddleware, importarHandler);
   app.get('/api/alunos/:matricula/habilitacoes/:trilha', verificarHabilitacaoHandler);
+  app.post('/api/alunos/:matricula/redefinir-senha', autenticarMiddleware, redefinirSenhaHandler);
   app.get('/api/alunos', autenticarMiddleware, listarAlunosHandler);
 
   app.post('/api/turmas/:turma/habilitacoes', autenticarMiddleware, habilitarTurmaHandler);

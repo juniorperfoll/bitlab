@@ -2,7 +2,7 @@
 // verificação de sessão administrativa por token.
 
 import crypto from 'node:crypto';
-import { getProfessorByToken, getProfessorPorUsuario, setProfessorToken, clearProfessorToken } from './db.js';
+import { getProfessorByToken, getProfessorPorUsuario, setProfessorToken, clearProfessorToken, getAlunoByToken } from './db.js';
 
 const PBKDF2_ITERATIONS = 100000;
 const HASH_BYTES = 32;
@@ -45,6 +45,27 @@ export function autenticarMiddleware(req, res, next) {
   }
 
   req.professor = professor;
+  next();
+}
+
+const MENSAGEM_SESSAO_ALUNO_INVALIDA = 'Sessão inválida. Faça login novamente.';
+
+// Middleware Express: valida o Bearer token do ALUNO contra token_ativo em
+// `alunos` (feature 002) — separado do middleware do professor acima; os dois
+// tokens não são intercambiáveis.
+export function autenticarAlunoMiddleware(req, res, next) {
+  const cabecalho = req.headers.authorization || '';
+  const [tipo, token] = cabecalho.split(' ');
+  if (tipo !== 'Bearer' || !token) {
+    return res.status(401).json({ mensagem: MENSAGEM_SESSAO_ALUNO_INVALIDA });
+  }
+
+  const aluno = getAlunoByToken(req.app.locals.db, token);
+  if (!aluno) {
+    return res.status(401).json({ mensagem: MENSAGEM_SESSAO_ALUNO_INVALIDA });
+  }
+
+  req.aluno = aluno;
   next();
 }
 

@@ -37,10 +37,12 @@ h1{font-size:1.4rem;margin:0 0 4px}
 }
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
 .field label{font-size:.85rem;color:var(--dim)}
-.field input, .field select{
+.field input, .field select, .field textarea{
   background:var(--board3); border:1px solid var(--solder); color:var(--ink);
   border-radius:8px; padding:10px 12px; font-family:var(--mono); font-size:.95rem;
 }
+.field textarea{width:100%;min-height:120px;resize:vertical}
+.field .dica{color:var(--dim);font-size:.8rem}
 .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
 .btn{
   background:var(--copper); color:#1a1200; border:none; border-radius:8px;
@@ -93,6 +95,17 @@ th{color:var(--dim);font-weight:600;font-size:.8rem;text-transform:uppercase}
     </div>
 
     <div class="card">
+      <div class="sub" style="margin:0 0 12px">Importar alunos</div>
+      <div class="field">
+        <label for="taImportar">Uma linha por aluno: matrícula,nome,e-mail,turma</label>
+        <textarea id="taImportar" placeholder="2026100,Fulano de Tal,fulano@unidavi.edu.br,T33F2&#10;2026101,Ciclana Souza,ciclana@unidavi.edu.br,T34F2"></textarea>
+        <span class="dica">Sem linha de cabeçalho. Alunos novos recebem senha padrão de primeiro acesso (a parte do e-mail antes de @unidavi.edu.br). Alunos já existentes só têm o cadastro atualizado — a senha não é mexida.</span>
+      </div>
+      <button class="btn" id="btImportar">Importar</button>
+      <div id="importarMsg" class="msg"></div>
+    </div>
+
+    <div class="card">
       <div class="sub" style="margin:0 0 12px">Habilitar/revogar turma inteira</div>
       <div class="row">
         <div class="field">
@@ -123,7 +136,7 @@ th{color:var(--dim);font-weight:600;font-size:.8rem;text-transform:uppercase}
       <table>
         <thead>
           <tr>
-            <th>Matrícula</th><th>Nome</th><th>Turma</th><th>E-mail</th>
+            <th>Matrícula</th><th>Nome</th><th>Turma</th><th>E-mail</th><th>Senha</th>
             <th>Arquitetura</th><th>Linguagens</th>
           </tr>
         </thead>
@@ -230,6 +243,41 @@ $('btRevogarTurma').onclick = async () => {
 
 $('btAtualizar').onclick = carregarAlunos;
 
+$('btImportar').onclick = async () => {
+  const linhas = $('taImportar').value;
+  if (!linhas.trim()) {
+    mostrarMsg($('importarMsg'), 'Cole a lista de alunos antes de importar.', 'erro');
+    return;
+  }
+  try {
+    const resultado = await api('/api/alunos/importar', {
+      method: 'POST',
+      body: JSON.stringify({ linhas }),
+    });
+    const partes = [`${resultado.criados} criado(s)`, `${resultado.atualizados} atualizado(s)`];
+    if (resultado.rejeitados.length) {
+      partes.push(`${resultado.rejeitados.length} rejeitado(s): ` +
+        resultado.rejeitados.map((r) => `linha ${r.linha} (${r.motivo})`).join('; '));
+    }
+    mostrarMsg($('importarMsg'), partes.join(' · '), resultado.rejeitados.length ? 'erro' : 'ok');
+    if (resultado.criados || resultado.atualizados) {
+      $('taImportar').value = '';
+      carregarAlunos();
+    }
+  } catch (e) {
+    mostrarMsg($('importarMsg'), e.message, 'erro');
+  }
+};
+
+async function redefinirSenha(matricula){
+  try {
+    await api(`/api/alunos/${matricula}/redefinir-senha`, { method: 'POST' });
+    carregarAlunos();
+  } catch (e) {
+    mostrarMsg($('alunosMsg'), e.message, 'erro');
+  }
+}
+
 async function alternarHabilitacaoIndividual(matricula, trilha, concedida){
   try {
     await api(`/api/alunos/${matricula}/habilitacoes`, {
@@ -270,7 +318,7 @@ async function carregarAlunos(){
     const { alunos } = await api('/api/alunos');
     const tbody = $('tbodyAlunos');
     if (!alunos.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="sub">Nenhum aluno cadastrado ainda.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="sub">Nenhum aluno cadastrado ainda.</td></tr>';
       return;
     }
     tbody.innerHTML = alunos.map((aluno) => `
@@ -279,6 +327,10 @@ async function carregarAlunos(){
         <td>${aluno.nome}</td>
         <td>${aluno.turma}</td>
         <td>${aluno.email}</td>
+        <td>
+          <span class="badge ${aluno.senhaPadraoAtiva ? 'off' : 'on'}">${aluno.senhaPadraoAtiva ? 'Padrão' : 'Própria'}</span>
+          <button class="btn ghost mini" onclick="redefinirSenha('${aluno.matricula}')">Redefinir</button>
+        </td>
         ${celulaTrilha(aluno, 'arquitetura')}
         ${celulaTrilha(aluno, 'linguagens')}
       </tr>`).join('');
@@ -291,6 +343,7 @@ async function carregarAlunos(){
 // Expor no escopo global para os onclick inline das células da tabela.
 window.alternarHabilitacaoIndividual = alternarHabilitacaoIndividual;
 window.removerExcecaoIndividual = removerExcecaoIndividual;
+window.redefinirSenha = redefinirSenha;
 
 if (token) mostrarPainel(); else mostrarLogin();
 </script>
