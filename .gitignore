@@ -1,2 +1,17 @@
 # Agent-local settings/credentials — never commit
 .claude/settings.local.json
+
+# Backend (Cloudflare Workers) — Node.js tooling and local dev state
+backend/node_modules/
+backend/dist/
+backend/.wrangler/
+backend/*.log
+.env
+.env.*
+
+# OS/editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/

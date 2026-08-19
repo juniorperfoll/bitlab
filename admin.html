@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BIT LAB — Painel do Professor</title>
+<style>
+:root{
+  --board:#10131c;
+  --board2:#171c2a;
+  --board3:#1e2536;
+  --solder:#2c3550;
+  --copper:#E8A33D;
+  --unidavi:#9E1B32;
+  --unidavi-l:#d4304f;
+  --led:#4FE0B0;
+  --led-off:#243049;
+  --violet:#9A7BFF;
+  --cyan:#59C3F0;
+  --ink:#EAF0FF;
+  --dim:#8E9AB8;
+  --err:#FF6B7A;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --body:'Inter',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; min-height:100vh; background:var(--board); color:var(--ink);
+  font-family:var(--body); padding:24px;
+}
+.wrap{max-width:960px;margin:0 auto}
+h1{font-size:1.4rem;margin:0 0 4px}
+.sub{color:var(--dim);font-size:.9rem;margin:0 0 24px}
+.card{
+  background:var(--board2); border:1px solid var(--solder); border-radius:12px;
+  padding:20px; margin-bottom:20px;
+}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-size:.85rem;color:var(--dim)}
+.field input, .field select{
+  background:var(--board3); border:1px solid var(--solder); color:var(--ink);
+  border-radius:8px; padding:10px 12px; font-family:var(--mono); font-size:.95rem;
+}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.btn{
+  background:var(--copper); color:#1a1200; border:none; border-radius:8px;
+  padding:10px 16px; font-weight:600; cursor:pointer; font-family:var(--body);
+}
+.btn.ghost{background:transparent;border:1px solid var(--solder);color:var(--ink)}
+.btn.danger{background:var(--err);color:#2a0006}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.msg{font-size:.9rem;margin-top:10px}
+.msg.err{color:var(--err)}
+.msg.ok{color:var(--led)}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--solder)}
+th{color:var(--dim);font-weight:600;font-size:.8rem;text-transform:uppercase}
+.badge{
+  display:inline-block;padding:3px 8px;border-radius:999px;font-size:.75rem;
+  font-family:var(--mono);
+}
+.badge.on{background:rgba(79,224,176,.15);color:var(--led)}
+.badge.off{background:rgba(255,107,122,.12);color:var(--err)}
+.mini{font-size:.75rem;padding:4px 8px}
+.hidden{display:none}
+#painel table td .row{gap:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>BIT LAB — Painel do Professor</h1>
+  <p class="sub">Área administrativa. Acesso restrito ao professor responsável.</p>
+
+  <div id="telaLogin" class="card">
+    <div class="field">
+      <label for="inUsuario">Usuário</label>
+      <input id="inUsuario" type="text" autocomplete="username">
+    </div>
+    <div class="field">
+      <label for="inSenha">Senha</label>
+      <input id="inSenha" type="password" autocomplete="current-password">
+    </div>
+    <button class="btn" id="btLogin">Entrar</button>
+    <div id="loginMsg" class="msg"></div>
+  </div>
+
+  <div id="telaPainel" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <div class="sub" style="margin:0">Habilitação de acesso às trilhas</div>
+        <button class="btn ghost mini" id="btLogout">Sair</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sub" style="margin:0 0 12px">Habilitar/revogar turma inteira</div>
+      <div class="row">
+        <div class="field">
+          <label for="selTurma">Turma</label>
+          <select id="selTurma">
+            <option value="T33F2">T33F2</option>
+            <option value="T34F2">T34F2</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="selTrilhaTurma">Trilha</label>
+          <select id="selTrilhaTurma">
+            <option value="arquitetura">Arquitetura de Computadores</option>
+            <option value="linguagens">Linguagens de Programação e Paradigmas</option>
+          </select>
+        </div>
+        <button class="btn" id="btHabilitarTurma">Habilitar turma</button>
+        <button class="btn ghost" id="btRevogarTurma">Revogar turma</button>
+      </div>
+      <div id="turmaMsg" class="msg"></div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:12px">
+        <div class="sub" style="margin:0">Alunos cadastrados</div>
+        <button class="btn ghost mini" id="btAtualizar">Atualizar lista</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Matrícula</th><th>Nome</th><th>Turma</th><th>E-mail</th>
+            <th>Arquitetura</th><th>Linguagens</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyAlunos"></tbody>
+      </table>
+      <div id="alunosMsg" class="msg"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Ajuste para a URL do backend implantado (ver backend/wrangler.toml / quickstart.md).
+const API_BASE = 'http://localhost:8787';
+
+let token = sessionStorage.getItem('bitlab_admin_token') || null;
+
+const $ = (id) => document.getElementById(id);
+
+function mostrarMsg(el, texto, tipo){
+  el.textContent = texto;
+  el.className = 'msg ' + (tipo === 'erro' ? 'err' : 'ok');
+}
+
+async function api(path, opcoes = {}){
+  const resp = await fetch(API_BASE + path, {
+    ...opcoes,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: 'Bearer ' + token } : {}),
+      ...(opcoes.headers || {}),
+    },
+  });
+  const dados = await resp.json().catch(() => ({}));
+  if (!resp.ok) throw new Error(dados.mensagem || 'Erro inesperado.');
+  return dados;
+}
+
+function mostrarPainel(){
+  $('telaLogin').classList.add('hidden');
+  $('telaPainel').classList.remove('hidden');
+  carregarAlunos();
+}
+
+function mostrarLogin(){
+  $('telaPainel').classList.add('hidden');
+  $('telaLogin').classList.remove('hidden');
+}
+
+$('btLogin').onclick = async () => {
+  const usuario = $('inUsuario').value.trim();
+  const senha = $('inSenha').value;
+  if (!usuario || !senha) {
+    mostrarMsg($('loginMsg'), 'Informe usuário e senha.', 'erro');
+    return;
+  }
+  try {
+    const { token: novoToken } = await api('/api/login', {
+      method: 'POST',
+      body: JSON.stringify({ usuario, senha }),
+    });
+    token = novoToken;
+    sessionStorage.setItem('bitlab_admin_token', token);
+    $('inSenha').value = '';
+    mostrarMsg($('loginMsg'), '', 'ok');
+    mostrarPainel();
+  } catch (e) {
+    mostrarMsg($('loginMsg'), e.message, 'erro');
+  }
+};
+
+$('btLogout').onclick = async () => {
+  try { await api('/api/logout', { method: 'POST' }); } catch (e) { /* já inválido, segue o logout local */ }
+  token = null;
+  sessionStorage.removeItem('bitlab_admin_token');
+  mostrarLogin();
+};
+
+$('btHabilitarTurma').onclick = async () => {
+  const turma = $('selTurma').value;
+  const trilha = $('selTrilhaTurma').value;
+  try {
+    await api(`/api/turmas/${turma}/habilitacoes`, {
+      method: 'POST',
+      body: JSON.stringify({ trilha }),
+    });
+    mostrarMsg($('turmaMsg'), `Turma ${turma} habilitada para a trilha selecionada.`, 'ok');
+    carregarAlunos();
+  } catch (e) {
+    mostrarMsg($('turmaMsg'), e.message, 'erro');
+  }
+};
+
+$('btRevogarTurma').onclick = async () => {
+  const turma = $('selTurma').value;
+  const trilha = $('selTrilhaTurma').value;
+  try {
+    await api(`/api/turmas/${turma}/habilitacoes/${trilha}`, { method: 'DELETE' });
+    mostrarMsg($('turmaMsg'), `Habilitação em lote da turma ${turma} revogada.`, 'ok');
+    carregarAlunos();
+  } catch (e) {
+    mostrarMsg($('turmaMsg'), e.message, 'erro');
+  }
+};
+
+$('btAtualizar').onclick = carregarAlunos;
+
+async function alternarHabilitacaoIndividual(matricula, trilha, concedida){
+  try {
+    await api(`/api/alunos/${matricula}/habilitacoes`, {
+      method: 'POST',
+      body: JSON.stringify({ trilha, concedida }),
+    });
+    carregarAlunos();
+  } catch (e) {
+    mostrarMsg($('alunosMsg'), e.message, 'erro');
+  }
+}
+
+async function removerExcecaoIndividual(matricula, trilha){
+  try {
+    await api(`/api/alunos/${matricula}/habilitacoes/${trilha}`, { method: 'DELETE' });
+    carregarAlunos();
+  } catch (e) {
+    mostrarMsg($('alunosMsg'), e.message, 'erro');
+  }
+}
+
+function celulaTrilha(aluno, trilha){
+  const habilitado = aluno.habilitacoes[trilha];
+  const badge = `<span class="badge ${habilitado ? 'on' : 'off'}">${habilitado ? 'Habilitado' : 'Bloqueado'}</span>`;
+  return `
+    <td>
+      <div class="row" style="gap:6px">
+        ${badge}
+        <button class="btn ghost mini" onclick="alternarHabilitacaoIndividual('${aluno.matricula}','${trilha}',true)">Conceder</button>
+        <button class="btn ghost mini" onclick="alternarHabilitacaoIndividual('${aluno.matricula}','${trilha}',false)">Bloquear</button>
+        <button class="btn ghost mini" onclick="removerExcecaoIndividual('${aluno.matricula}','${trilha}')">Remover exceção</button>
+      </div>
+    </td>`;
+}
+
+async function carregarAlunos(){
+  try {
+    const { alunos } = await api('/api/alunos');
+    const tbody = $('tbodyAlunos');
+    if (!alunos.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="sub">Nenhum aluno cadastrado ainda.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = alunos.map((aluno) => `
+      <tr>
+        <td>${aluno.matricula}</td>
+        <td>${aluno.nome}</td>
+        <td>${aluno.turma}</td>
+        <td>${aluno.email}</td>
+        ${celulaTrilha(aluno, 'arquitetura')}
+        ${celulaTrilha(aluno, 'linguagens')}
+      </tr>`).join('');
+  } catch (e) {
+    mostrarMsg($('alunosMsg'), e.message, 'erro');
+    if (e.message.includes('Sessão')) mostrarLogin();
+  }
+}
+
+// Expor no escopo global para os onclick inline das células da tabela.
+window.alternarHabilitacaoIndividual = alternarHabilitacaoIndividual;
+window.removerExcecaoIndividual = removerExcecaoIndividual;
+
+if (token) mostrarPainel(); else mostrarLogin();
+</script>
+</body>
+</html>

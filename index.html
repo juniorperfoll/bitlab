@@ -405,10 +405,11 @@ pre.relatorio{
     <div class="hero">
       <h2 class="title">Seu registrador está zerado. Hora de ligar os bits.</h2>
       <p class="tagline">
-        Uma trilha evolutiva de fixação para as Aulas 02 e 03 — sistemas de numeração,
-        conversões, frações binárias, negativos, ponto flutuante e codificação de caracteres.
-        Cada estação sobe o nível: você entra como <b style="color:var(--copper)">Recruta dos Bits</b>
-        e sai como <b style="color:var(--copper)">Mestre da Representação de Dados</b>.
+        Duas trilhas evolutivas de fixação: <b style="color:var(--copper)">Arquitetura de Computadores</b>
+        (sistemas de numeração, conversões, frações binárias, negativos, ponto flutuante e codificação de
+        caracteres) e <b style="color:var(--copper)">Linguagens de Programação e Paradigmas</b> (compilação,
+        paradigmas, orientação a objetos, funcional, lógico e sistemas de tipos).
+        Cada estação sobe o nível, da primeira posição até o rank máximo da trilha escolhida.
       </p>
 
       <div class="featgrid">
@@ -455,11 +456,25 @@ pre.relatorio{
         </div>
       </div>
       <div class="field">
+        <label for="inEmail">E-mail institucional</label>
+        <input type="email" id="inEmail" placeholder="seu.nome@unidavi.edu.br" autocomplete="off" maxlength="80">
+        <span class="foot" style="text-align:left">Precisa ser um e-mail do domínio @unidavi.edu.br.</span>
+      </div>
+      <p id="cadastroMsg" class="foot" style="text-align:left;color:var(--err);display:none"></p>
+      <div class="field">
         <label>Turma</label>
         <div class="seg" id="segTurma">
           <button data-turma="T33F2" class="on">T33F2 — Quintas-feiras</button>
           <button data-turma="T34F2">T34F2 — Sextas-feiras</button>
         </div>
+      </div>
+      <div class="field">
+        <label>Trilha</label>
+        <div class="seg" id="segTrilha">
+          <button data-trilha="arquitetura" class="on">Arquitetura de Computadores</button>
+          <button data-trilha="linguagens">Linguagens de Programação e Paradigmas</button>
+        </div>
+        <p class="foot" id="trilhaDesc" style="text-align:left;margin-top:8px"></p>
       </div>
       <div class="row">
         <button class="btn" id="btComecar">⚡ Entrar na trilha</button>
@@ -585,6 +600,19 @@ function grp(s,k){ let out=''; for(let i=s.length;i>0;i-=k){ out = s.slice(Math.
 function nf(n){ return n.toLocaleString('pt-BR'); }
 const V = s => '<span class="val">'+s+'</span>';
 const PESOS = [128,64,32,16,8,4,2,1];
+
+/* ---------------- backend mínimo (cadastro + habilitação, ver contracts/api.md) ---------------- */
+// Ajuste para a URL do backend implantado (ver backend/wrangler.toml / quickstart.md).
+const API_BASE = 'http://localhost:8787';
+async function apiFetch(path, opcoes){
+  const resp = await fetch(API_BASE + path, {
+    headers: { 'Content-Type':'application/json' },
+    ...opcoes
+  });
+  const dados = await resp.json().catch(()=>({}));
+  if(!resp.ok) throw new Error(dados.mensagem || 'Erro inesperado. Tente novamente.');
+  return dados;
+}
 
 /* ---------------- verificadores de resposta ---------------- */
 function limpar(s){
@@ -1589,49 +1617,715 @@ function g8_unicodeTrivia(){
 }
 
 /* =======================================================================
-   ESTAÇÕES (trilha evolutiva — ordem fixa, dificuldade crescente)
+   GERADORES — TRILHA "LINGUAGENS DE PROGRAMAÇÃO E PARADIGMAS"
    ======================================================================= */
-const STAGES = [
-  { id:'e1', num:1, nome:'Fundamentos', cor:'#4FE0B0',
-    desc:'Bit, byte e a fórmula 2ⁿ.',
-    pool:[g1_sigla,g1_estados,g1_capacidade,g1_byteFaixa,g1_idadeBits,g1_nesCores,g1_atariRam,g1_word] },
-  { id:'e2', num:2, nome:'Sistemas de Numeração', cor:'#E8A33D',
-    desc:'Base, algarismos e as regras universais.',
-    pool:[g2_ondeUsa,g2_algarismos,g2_msblsb,g2_posicional,g2_maxComNDigitos,g2_chmod,g2_subscrito] },
-  { id:'e3', num:3, nome:'Decimal ⇄ Outras Bases', cor:'#59C3F0',
-    desc:'Divisões sucessivas e notação polinomial.',
-    pool:[g3_bits,g3_decHex,g3_binDec,g3_hexDec,g3_decOct,g3_idadeBin,g3_idadeHex,g3_matriculaBase] },
-  { id:'e4', num:4, nome:'Agrupamento de Bits', cor:'#9A7BFF',
-    desc:'Binário ⇄ octal/hex, e cores em hexadecimal.',
-    pool:[g4_binHex,g4_binOct,g4_hexBin,g4_octHexEspecial,g4_corReconhece,g4_corComponente,g4_nesPaleta] },
-  { id:'e5', num:5, nome:'Números Fracionários', cor:'#FF6BA6',
-    desc:'Frações binárias e por que 0,8 não termina.',
-    pool:[g5_fracBinDec,g5_fracDecBin,g5_misto,g5_dizima,g5_alphaGame,g5_pontoFixoUso] },
-  { id:'e6', num:6, nome:'Números Negativos', cor:'#F0A84B',
-    desc:'Sinal-magnitude, complemento de 1 e de 2.',
-    pool:[g6_sinalMag,g6_c1,g6_c2,g6_vantagens,g6_menos128,g6_excesso128,g6_gandhi,g6_idadeC2] },
-  { id:'e7', num:7, nome:'Ponto Flutuante', cor:'#F06B6B',
-    desc:'Normalização e o padrão IEEE 754.',
-    pool:[g7_pontoFixoVsFlutuante,g7_010203,g7_casosEspeciais,g7_normalizar,g7_ieeeCompleto,g7_formatos,g7_overUnder,g7_bcd] },
-  { id:'e8', num:8, nome:'Codificação de Caracteres', cor:'#7EE081',
-    desc:'ASCII, UTF-8 — e o seu próprio nome em bits.',
-    pool:[g8_asciiBits,g8_codifica,g8_decodifica,g8_bit5,g8_utf8,g8_nomeParaAscii,g8_nomeDeBinario,g8_matriculaDigitoAscii,g8_unicodeTrivia] },
-  { id:'boss', num:'★', nome:'Certificação Final', cor:'#d4304f', boss:true,
-    desc:'Questões sorteadas de todas as estações, pontuação dobrada.',
-    pool:[] }
-];
+
+/* --- Estação L1: Fundamentos de Linguagens --- */
+function l1_oQueE(){
+  const opts = shuffle([
+    {t:'Um conjunto formal de regras (sintaxe e semântica) usado para escrever instruções que um computador pode executar.', ok:true},
+    {t:'Um tipo de sistema operacional que roda em qualquer computador.', ok:false},
+    {t:'Um protocolo de rede para troca de mensagens entre programas.', ok:false},
+    {t:'Um formato de arquivo de imagem usado por editores de código.', ok:false}
+  ]);
+  return {
+    tag:'Definição', tipo:'escolha',
+    enun:'O que é, tecnicamente, uma linguagem de programação?',
+    dica:'Pense em "regras" + "instruções para o computador".',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Uma linguagem de programação define uma sintaxe (como escrever) e uma semântica (o que cada construção significa), permitindo expressar instruções que um computador consegue executar, direta ou indiretamente.'
+  };
+}
+function l1_codigoFonte(){
+  const opts = shuffle([
+    {t:'O texto escrito pelo programador na sintaxe da linguagem, antes de ser traduzido para algo que o computador executa diretamente.', ok:true},
+    {t:'O manual de instruções que acompanha um programa comercial.', ok:false},
+    {t:'O nome do arquivo executável final gerado após a compilação.', ok:false},
+    {t:'Um tipo de comentário que explica o funcionamento do programa.', ok:false}
+  ]);
+  return {
+    tag:'Código-fonte', tipo:'escolha',
+    enun:'O que é "código-fonte"?',
+    dica:'É o que o programador digita, antes de virar algo que a máquina executa.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Código-fonte é o texto legível por humanos, escrito na sintaxe de uma linguagem de programação. Ele precisa ser traduzido (compilado ou interpretado) para que o computador possa executá-lo.'
+  };
+}
+function l1_compiladoVsInterpretado(){
+  const opts = shuffle([
+    {t:'O compilador traduz todo o código-fonte para código de máquina antes da execução; o interpretador lê e executa o código, geralmente linha a linha, sem gerar um executável separado.', ok:true},
+    {t:'O compilador só funciona em Windows; o interpretador só funciona em Linux.', ok:false},
+    {t:'Interpretador e compilador são dois nomes diferentes para a mesma ferramenta.', ok:false},
+    {t:'O compilador executa o programa direto na memória, sem nunca gerar arquivo nenhum.', ok:false}
+  ]);
+  return {
+    tag:'Compilação vs. interpretação', tipo:'escolha',
+    enun:'Qual a diferença central entre um compilador e um interpretador?',
+    dica:'Um traduz tudo de uma vez antes de rodar; o outro vai traduzindo e executando aos poucos.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Compiladores traduzem o código-fonte inteiro para código de máquina (ou outra representação) antes da execução, gerando um executável. Interpretadores leem e executam o código de forma incremental, sem produzir um executável independente — muitas linguagens modernas usam técnicas híbridas (ex.: compilação just-in-time), mas a distinção conceitual continua sendo essa.'
+  };
+}
+function l1_exemploCompilada(){
+  const opts = shuffle([
+    {t:'C', ok:true},
+    {t:'Python', ok:false},
+    {t:'JavaScript', ok:false},
+    {t:'HTML', ok:false}
+  ]);
+  return {
+    tag:'Exemplo', tipo:'escolha',
+    enun:'Qual das opções abaixo é classicamente citada como exemplo de linguagem compilada, traduzida para código de máquina antes da execução?',
+    dica:'Uma das opções nem é uma linguagem de programação — é uma linguagem de marcação.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'C é o exemplo clássico de linguagem compilada, com tradução para código de máquina nativo antes de rodar. Python e JavaScript são tipicamente interpretados (ou compilados just-in-time em tempo de execução). HTML não é uma linguagem de programação — é uma linguagem de marcação, usada para estruturar conteúdo.'
+  };
+}
+function l1_traducao(){
+  const opts = shuffle([
+    {t:'Porque o processador só executa instruções em linguagem de máquina (código binário específico do hardware), e o código-fonte é escrito em uma notação legível para humanos.', ok:true},
+    {t:'Porque todo código-fonte contém erros que precisam ser corrigidos automaticamente.', ok:false},
+    {t:'Porque o sistema operacional exige que todo texto seja convertido para PDF antes de ser aberto.', ok:false},
+    {t:'Porque, sem essa etapa, o código-fonte ocuparia espaço demais no disco.', ok:false}
+  ]);
+  return {
+    tag:'Por que traduzir', tipo:'escolha',
+    enun:'Por que o código-fonte precisa passar por um compilador ou interpretador antes (ou durante) a execução?',
+    dica:'O processador só entende um tipo de "idioma".',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'O hardware só executa instruções em linguagem de máquina — sequências binárias específicas do processador. Código-fonte é escrito para ser legível por humanos, então precisa ser traduzido para essa forma que a máquina entende.'
+  };
+}
+
+/* --- Estação L2: Paradigmas Fundamentais --- */
+function l2_imperativoDef(){
+  const opts = shuffle([
+    {t:'Um estilo em que o programa é uma sequência de comandos que alteram o estado (variáveis) passo a passo.', ok:true},
+    {t:'Um estilo em que o programador só descreve o resultado desejado, sem nenhum comando.', ok:false},
+    {t:'Um estilo usado exclusivamente para páginas web.', ok:false},
+    {t:'Um estilo que não permite o uso de variáveis.', ok:false}
+  ]);
+  return {
+    tag:'Paradigma imperativo', tipo:'escolha',
+    enun:'O que caracteriza o paradigma imperativo?',
+    dica:'"Imperativo" tem a ver com dar ordens, passo a passo.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'No paradigma imperativo, o programa descreve COMO alcançar um resultado: uma sequência de instruções que muda o estado do programa (variáveis) a cada passo. É o paradigma mais próximo de "como o processador realmente funciona".'
+  };
+}
+function l2_declarativoDef(){
+  const opts = shuffle([
+    {t:'Um estilo em que o programador descreve O QUE deve ser obtido, deixando os detalhes de como fazer para a linguagem/motor de execução.', ok:true},
+    {t:'Um estilo em que cada linha precisa dizer explicitamente qual instrução de máquina executar.', ok:false},
+    {t:'Um sinônimo de "linguagem compilada".', ok:false},
+    {t:'Um estilo que só existe em bancos de dados.', ok:false}
+  ]);
+  return {
+    tag:'Paradigma declarativo', tipo:'escolha',
+    enun:'O que caracteriza o paradigma declarativo?',
+    dica:'Pense em SQL: você diz "o que" quer, não "como" buscar.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'No paradigma declarativo, o foco é descrever O QUE se deseja como resultado, não a sequência exata de passos para chegar lá. SQL e HTML são exemplos comuns: você descreve o resultado desejado (dados filtrados, estrutura da página) e outra camada decide como produzi-lo.'
+  };
+}
+function l2_exemploImperativo(){
+  const opts = shuffle([
+    {t:'SQL', ok:false},
+    {t:'C', ok:true},
+    {t:'HTML', ok:false},
+    {t:'Prolog', ok:false}
+  ]);
+  return {
+    tag:'Exemplo imperativo', tipo:'escolha',
+    enun:'Qual das linguagens abaixo é o exemplo mais clássico de estilo imperativo (sequência explícita de comandos que alteram estado)?',
+    dica:'As outras três são mais associadas ao estilo declarativo/lógico.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'C é um exemplo clássico de linguagem imperativa: o programa é uma sequência de comandos (atribuições, laços, condicionais) que vão alterando variáveis passo a passo. SQL e HTML são declarativos; Prolog é lógico (um subtipo de declarativo).'
+  };
+}
+function l2_estadoMutavel(){
+  const opts = shuffle([
+    {t:'Variáveis cujo valor pode ser alterado (reatribuído) ao longo da execução do programa.', ok:true},
+    {t:'Variáveis que só existem dentro de comentários.', ok:false},
+    {t:'Variáveis que mudam de nome automaticamente a cada linha.', ok:false},
+    {t:'Um recurso exclusivo de linguagens funcionais.', ok:false}
+  ]);
+  return {
+    tag:'Estado mutável', tipo:'escolha',
+    enun:'O que significa "estado mutável", conceito central no estilo imperativo?',
+    dica:'"Mutável" = pode mudar.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Estado mutável é a ideia de que uma variável guarda um valor que pode ser sobrescrito (reatribuído) conforme o programa executa — típico do estilo imperativo, onde comandos alteram o estado passo a passo. O paradigma funcional, em contraste, tende a evitar mutação, preferindo criar novos valores em vez de alterar os existentes.'
+  };
+}
+function l2_paradigmaMultiplo(){
+  const opts = shuffle([
+    {t:'Sim — uma linguagem pode suportar mais de um paradigma; Python, por exemplo, permite estilo imperativo, orientado a objetos e traços de estilo funcional.', ok:true},
+    {t:'Não — cada linguagem é obrigada a seguir um único paradigma para sempre.', ok:false},
+    {t:'Não — misturar paradigmas sempre impede o programa de compilar.', ok:false},
+    {t:'Sim, mas só linguagens de marcação como HTML podem fazer isso.', ok:false}
+  ]);
+  return {
+    tag:'Multiparadigma', tipo:'escolha',
+    enun:'Uma linguagem de programação pode suportar mais de um paradigma ao mesmo tempo?',
+    dica:'Pense em uma linguagem que você conheça que tem classes, funções soltas e laços.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Muitas linguagens modernas são multiparadigma: Python, JavaScript e Java (a partir de certas versões) combinam recursos imperativos, orientados a objetos e funcionais, deixando a escolha de estilo mais a cargo do programador do que da linguagem em si.'
+  };
+}
+
+/* --- Estação L3: Paradigma Estruturado --- */
+function l3_funcaoDef(){
+  const opts = shuffle([
+    {t:'Um bloco de código nomeado e reutilizável, que pode receber parâmetros e ser chamado de vários pontos do programa.', ok:true},
+    {t:'Um comentário especial que documenta o programa, sem ser executado.', ok:false},
+    {t:'Um tipo de variável que só guarda números.', ok:false},
+    {t:'Um arquivo separado que o compilador ignora.', ok:false}
+  ]);
+  return {
+    tag:'Função/procedimento', tipo:'escolha',
+    enun:'O que é uma função (ou procedimento), no contexto da programação estruturada?',
+    dica:'Pense em "pedaço de código reaproveitável, com nome".',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Uma função/procedimento é um bloco de instruções nomeado, que pode ser chamado (invocado) de diferentes pontos do programa, opcionalmente recebendo parâmetros — evitando repetir o mesmo código várias vezes.'
+  };
+}
+function l3_fluxoControle(){
+  const opts = shuffle([
+    {t:'Sequência, decisão (if/else) e repetição (laços) — as três estruturas básicas para controlar a ordem de execução das instruções.', ok:true},
+    {t:'Apenas comentários e espaços em branco.', ok:false},
+    {t:'Somente instruções de impressão na tela.', ok:false},
+    {t:'Um recurso exclusivo de bancos de dados.', ok:false}
+  ]);
+  return {
+    tag:'Estruturas de controle', tipo:'escolha',
+    enun:'Quais são as estruturas básicas de controle de fluxo da programação estruturada?',
+    dica:'Um teorema clássico (Böhm-Jacopini) mostra que só três estruturas já bastam.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'A programação estruturada se apoia em três estruturas de controle: sequência (uma instrução após a outra), decisão (if/else, escolher um caminho) e repetição (laços, repetir um bloco). Com apenas essas três, qualquer fluxo de programa pode ser construído.'
+  };
+}
+function l3_exemploLinguagem(){
+  const opts = shuffle([
+    {t:'C e Pascal', ok:true},
+    {t:'Prolog e Datalog', ok:false},
+    {t:'HTML e CSS', ok:false},
+    {t:'SQL e XPath', ok:false}
+  ]);
+  return {
+    tag:'Linguagens estruturadas', tipo:'escolha',
+    enun:'Quais das opções abaixo são exemplos clássicos de linguagens procedurais/estruturadas?',
+    dica:'São duas linguagens muito usadas no ensino de algoritmos.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'C e Pascal são exemplos clássicos de linguagens procedurais/estruturadas, organizadas em torno de funções/procedimentos e das estruturas de controle sequência/decisão/repetição. As demais opções são linguagens declarativas ou de marcação.'
+  };
+}
+function l3_gotoProblem(){
+  const opts = shuffle([
+    {t:'O uso descontrolado de "goto" (saltos arbitrários entre linhas) tornava o código difícil de ler e depurar — a programação estruturada surgiu, entre outras razões, para reduzir essa necessidade.', ok:true},
+    {t:'O "goto" fazia o computador desligar sozinho.', ok:false},
+    {t:'O "goto" era proibido por lei em contratos de software.', ok:false},
+    {t:'O "goto" só existia em linguagens de marcação, nunca em linguagens de programação.', ok:false}
+  ]);
+  return {
+    tag:'"Goto considered harmful"', tipo:'escolha',
+    enun:'Qual problema histórico motivou parte do movimento da programação estruturada, associado ao famoso artigo de Edsger Dijkstra sobre o comando "goto"?',
+    dica:'Tem a ver com "pular" para qualquer linha do programa, de forma desorganizada.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Edsger Dijkstra argumentou, no artigo "Go To Statement Considered Harmful" (1968), que o uso livre de "goto" (saltos incondicionais para qualquer ponto do código) tornava programas difíceis de entender e verificar. A programação estruturada, com sequência/decisão/repetição, oferece uma alternativa mais organizada, sem depender de saltos arbitrários.'
+  };
+}
+function l3_modularidade(){
+  const opts = shuffle([
+    {t:'Facilita reuso de código, organização e manutenção, já que cada função cuida de uma responsabilidade específica.', ok:true},
+    {t:'Torna o programa automaticamente mais rápido em qualquer situação, sem exceção.', ok:false},
+    {t:'Impede que o programa tenha mais de uma função no total.', ok:false},
+    {t:'É um recurso exclusivo de linguagens orientadas a objetos.', ok:false}
+  ]);
+  return {
+    tag:'Modularidade', tipo:'escolha',
+    enun:'Qual a principal vantagem de dividir um programa em várias funções/procedimentos pequenos, em vez de um bloco único gigante?',
+    dica:'Pense em organização e reaproveitamento, não em velocidade de execução.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Dividir um programa em funções/procedimentos menores (modularidade) facilita reaproveitar código já escrito, entender cada parte isoladamente e manter/corrigir o programa — não é, por si só, uma garantia de desempenho, e não é exclusividade da orientação a objetos (existe desde a programação estruturada).'
+  };
+}
+
+/* --- Estação L4: Orientação a Objetos --- */
+function l4_classeObjeto(){
+  const opts = shuffle([
+    {t:'Classe é o "molde"/template que define atributos e comportamentos; objeto é uma instância concreta criada a partir desse molde.', ok:true},
+    {t:'Classe e objeto são sinônimos — dois nomes para a mesma coisa.', ok:false},
+    {t:'Objeto é o molde; classe é a instância criada a partir dele.', ok:false},
+    {t:'Classe é um tipo de arquivo de configuração do sistema operacional.', ok:false}
+  ]);
+  return {
+    tag:'Classe vs. objeto', tipo:'escolha',
+    enun:'Qual a diferença entre "classe" e "objeto" na orientação a objetos?',
+    dica:'Pense em "planta de uma casa" (classe) vs. "a casa construída" (objeto).',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Uma classe é a definição/molde — atributos e métodos que descrevem um tipo de entidade. Um objeto é uma instância concreta desse molde, com seus próprios valores para os atributos. Ex.: a classe "Carro" define que todo carro tem cor e velocidade; um objeto é "este Fusca azul, parado".'
+  };
+}
+function l4_heranca(){
+  const opts = shuffle([
+    {t:'Permite que uma classe reutilize e estenda atributos/comportamentos de outra classe já existente.', ok:true},
+    {t:'Impede que qualquer classe tenha mais de um atributo.', ok:false},
+    {t:'É o processo de apagar uma classe do programa.', ok:false},
+    {t:'Só existe em linguagens funcionais, nunca em orientadas a objetos.', ok:false}
+  ]);
+  return {
+    tag:'Herança', tipo:'escolha',
+    enun:'O que é herança, na orientação a objetos?',
+    dica:'O nome já dá a dica: uma classe "herda" características de outra.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Herança permite que uma classe (subclasse/classe filha) reaproveite atributos e métodos de outra classe (superclasse/classe mãe), podendo adicionar ou sobrescrever comportamentos — evitando duplicar código entre classes relacionadas.'
+  };
+}
+function l4_encapsulamento(){
+  const opts = shuffle([
+    {t:'Agrupar dados e os métodos que operam sobre eles em uma mesma unidade (classe), restringindo o acesso direto ao estado interno de fora dela.', ok:true},
+    {t:'Comprimir um programa inteiro em um único arquivo executável.', ok:false},
+    {t:'Traduzir o código-fonte para outra linguagem de programação.', ok:false},
+    {t:'Impedir que qualquer classe tenha métodos.', ok:false}
+  ]);
+  return {
+    tag:'Encapsulamento', tipo:'escolha',
+    enun:'O que é encapsulamento, na orientação a objetos?',
+    dica:'Tem a ver com "proteger" o estado interno de um objeto.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Encapsulamento é agrupar dados (atributos) e comportamentos (métodos) relacionados dentro de uma classe, controlando o acesso externo ao estado interno — geralmente expondo apenas o necessário através de métodos públicos, e escondendo detalhes de implementação.'
+  };
+}
+function l4_polimorfismo(){
+  const opts = shuffle([
+    {t:'Objetos de classes diferentes respondem à mesma chamada de método, cada um com seu próprio comportamento específico.', ok:true},
+    {t:'Uma classe que não pode ter nenhuma subclasse.', ok:false},
+    {t:'Um erro comum que impede o programa de compilar.', ok:false},
+    {t:'Um tipo de variável que armazena apenas texto.', ok:false}
+  ]);
+  return {
+    tag:'Polimorfismo', tipo:'escolha',
+    enun:'O que é polimorfismo, na orientação a objetos?',
+    dica:'"Poli" = muitas formas — o mesmo "comando" gera comportamentos diferentes.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Polimorfismo permite chamar o mesmo método (ex.: "emitirSom()") em objetos de classes diferentes (ex.: Cachorro, Gato) e cada um executar sua própria versão específica desse comportamento, mesmo compartilhando a mesma interface/chamada.'
+  };
+}
+function l4_exemploLinguagem(){
+  const opts = shuffle([
+    {t:'Java', ok:true},
+    {t:'Prolog', ok:false},
+    {t:'SQL', ok:false},
+    {t:'Assembly', ok:false}
+  ]);
+  return {
+    tag:'Exemplo OO', tipo:'escolha',
+    enun:'Qual das linguagens abaixo é um exemplo clássico e amplamente conhecido de linguagem orientada a objetos?',
+    dica:'É uma das linguagens mais usadas no ensino de POO no mundo todo.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Java é um dos exemplos mais conhecidos de linguagem orientada a objetos, construída em torno de classes, herança, encapsulamento e polimorfismo. C++, Python e C# também suportam OO. Prolog é lógica, SQL é declarativa para consultas, e Assembly é de baixíssimo nível, sem noção de classes.'
+  };
+}
+
+/* --- Estação L5: Paradigma Funcional --- */
+function l5_funcaoPura(){
+  const opts = shuffle([
+    {t:'Uma função que, para a mesma entrada, sempre produz a mesma saída, sem alterar nada fora dela (sem efeitos colaterais).', ok:true},
+    {t:'Uma função que nunca recebe nenhum parâmetro.', ok:false},
+    {t:'Uma função escrita sem nenhum comentário no código.', ok:false},
+    {t:'Uma função que só pode ser chamada uma única vez no programa.', ok:false}
+  ]);
+  return {
+    tag:'Função pura', tipo:'escolha',
+    enun:'O que é uma "função pura", conceito central do paradigma funcional?',
+    dica:'Pense em uma função matemática: mesma entrada, sempre a mesma saída.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Uma função pura sempre retorna o mesmo resultado para os mesmos argumentos e não produz efeitos colaterais (não altera variáveis externas, não escreve em arquivo, não imprime na tela). Isso torna o comportamento do programa mais previsível e fácil de testar.'
+  };
+}
+function l5_imutabilidade(){
+  const opts = shuffle([
+    {t:'Uma vez criado, um valor/estrutura de dados não é alterado; para "mudar" algo, cria-se um novo valor em vez de modificar o existente.', ok:true},
+    {t:'A proibição de criar qualquer variável no programa.', ok:false},
+    {t:'Um recurso que só existe em bancos de dados relacionais.', ok:false},
+    {t:'Um sinônimo de "compilação".', ok:false}
+  ]);
+  return {
+    tag:'Imutabilidade', tipo:'escolha',
+    enun:'O que significa "imutabilidade", um princípio valorizado no paradigma funcional?',
+    dica:'"Imutável" = não muda depois de criado.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Imutabilidade significa que, uma vez criado, um dado não é modificado — em vez de alterar uma estrutura existente, o programa cria uma nova versão com a mudança desejada. Isso reduz efeitos colaterais inesperados e facilita raciocinar sobre o programa.'
+  };
+}
+function l5_recursao(){
+  const opts = shuffle([
+    {t:'Uma função que chama a si mesma para resolver um problema, geralmente dividindo-o em casos menores até um caso base.', ok:true},
+    {t:'Um tipo de erro de sintaxe comum em linguagens funcionais.', ok:false},
+    {t:'A repetição de comentários iguais em várias partes do código.', ok:false},
+    {t:'Um recurso exclusivo de linguagens orientadas a objetos.', ok:false}
+  ]);
+  return {
+    tag:'Recursão', tipo:'escolha',
+    enun:'O que é recursão, técnica muito usada no estilo funcional (frequentemente no lugar de laços)?',
+    dica:'"Função que chama a si mesma" é a pista.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Recursão é quando uma função chama a si mesma para resolver uma versão menor do mesmo problema, até atingir um caso base que interrompe as chamadas. É comum no estilo funcional, que tende a evitar laços com variáveis mutáveis, preferindo expressar repetição como chamadas recursivas.'
+  };
+}
+function l5_exemploLinguagem(){
+  const opts = shuffle([
+    {t:'Haskell', ok:true},
+    {t:'C', ok:false},
+    {t:'Assembly', ok:false},
+    {t:'Pascal', ok:false}
+  ]);
+  return {
+    tag:'Exemplo funcional', tipo:'escolha',
+    enun:'Qual das linguagens abaixo é um exemplo clássico de linguagem funcional?',
+    dica:'As outras três são fortemente associadas ao estilo imperativo/procedural.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Haskell é um dos exemplos mais citados de linguagem puramente funcional, ao lado de Lisp e Elixir. C, Assembly e Pascal são linguagens classicamente imperativas/procedurais.'
+  };
+}
+function l5_efeitoColateral(){
+  const opts = shuffle([
+    {t:'Quando uma função faz algo além de calcular seu retorno — por exemplo, altera uma variável externa, escreve em arquivo ou imprime na tela.', ok:true},
+    {t:'Um erro que trava o programa imediatamente, sempre.', ok:false},
+    {t:'Um recurso que só existe em linguagens orientadas a objetos.', ok:false},
+    {t:'O nome técnico para um comentário mal formatado.', ok:false}
+  ]);
+  return {
+    tag:'Efeito colateral', tipo:'escolha',
+    enun:'O que é um "efeito colateral" (side effect) de uma função, conceito que o paradigma funcional tenta minimizar?',
+    dica:'É algo que a função faz "além de" simplesmente devolver um valor.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Efeito colateral é qualquer mudança observável que uma função produz além de retornar seu resultado: alterar uma variável fora dela, gravar em disco, imprimir na tela, etc. Funções puras, por definição, não têm efeitos colaterais.'
+  };
+}
+
+/* --- Estação L6: Paradigma Lógico --- */
+function l6_fatoRegra(){
+  const opts = shuffle([
+    {t:'O programa é escrito como um conjunto de fatos (afirmações verdadeiras) e regras (relações entre fatos); o sistema deduz respostas a partir deles.', ok:true},
+    {t:'O programa é uma lista de comandos executados um a um, sem nenhuma regra envolvida.', ok:false},
+    {t:'Fatos e regras são termos usados só em bancos de dados, nunca em linguagens de programação.', ok:false},
+    {t:'É o mesmo que orientação a objetos, apenas com outro nome.', ok:false}
+  ]);
+  return {
+    tag:'Fatos e regras', tipo:'escolha',
+    enun:'Como um programa é estruturado no paradigma lógico?',
+    dica:'Pense em "descrever conhecimento" em vez de "dar ordens".',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'No paradigma lógico, o programador declara fatos (ex.: "maria é mãe de joão") e regras (relações lógicas entre fatos), e o sistema usa um mecanismo de inferência para responder perguntas, deduzindo o que é verdadeiro a partir do que foi declarado.'
+  };
+}
+function l6_prologExemplo(){
+  const opts = shuffle([
+    {t:'Prolog', ok:true},
+    {t:'Java', ok:false},
+    {t:'C', ok:false},
+    {t:'HTML', ok:false}
+  ]);
+  return {
+    tag:'Linguagem lógica', tipo:'escolha',
+    enun:'Qual das linguagens abaixo é o exemplo clássico de linguagem de programação lógica?',
+    dica:'É a linguagem mais citada quando o assunto é "fatos e regras".',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Prolog ("Programming in Logic") é a linguagem lógica mais conhecida, usada para representar fatos e regras e responder consultas por inferência. Java e C são imperativas/orientadas a objetos; HTML é uma linguagem de marcação.'
+  };
+}
+function l6_inferencia(){
+  const opts = shuffle([
+    {t:'O sistema aplica um mecanismo automático (o motor de inferência) para deduzir respostas a partir dos fatos e regras declarados, sem o programador especificar o passo a passo.', ok:true},
+    {t:'O programador precisa escrever manualmente cada passo do algoritmo de busca, como em uma linguagem imperativa comum.', ok:false},
+    {t:'Inferência é um sinônimo de "compilação" em linguagens lógicas.', ok:false},
+    {t:'É o nome do editor de texto usado para escrever código em Prolog.', ok:false}
+  ]);
+  return {
+    tag:'Motor de inferência', tipo:'escolha',
+    enun:'Como uma linguagem lógica como Prolog chega a uma resposta para uma consulta (query)?',
+    dica:'Não é o programador que descreve o passo a passo da busca.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Em vez de o programador escrever o passo a passo de como buscar a resposta, o motor de inferência da linguagem lógica deduz automaticamente as respostas possíveis a partir dos fatos e regras declarados, usando técnicas como unificação e busca com retrocesso (backtracking).'
+  };
+}
+function l6_declarativoLogico(){
+  const opts = shuffle([
+    {t:'Sim — a programação lógica é considerada um subtipo (uma forma) de programação declarativa.', ok:true},
+    {t:'Não — programação lógica é sempre um subtipo de programação imperativa.', ok:false},
+    {t:'Não — programação lógica e declarativa são paradigmas totalmente incompatíveis entre si.', ok:false},
+    {t:'Sim, mas apenas quando o programa não usa nenhuma regra.', ok:false}
+  ]);
+  return {
+    tag:'Lógico e declarativo', tipo:'escolha',
+    enun:'A programação lógica é considerada um subtipo de qual paradigma mais amplo?',
+    dica:'Pense em "descrever o que é verdadeiro" em vez de "como calcular passo a passo".',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Programação lógica é um subtipo de programação declarativa: o programador descreve relações e fatos (o que é verdadeiro), e não uma sequência explícita de instruções (como fazer) — essa segunda parte fica a cargo do motor de inferência da linguagem.'
+  };
+}
+function l6_naoStep(){
+  const opts = shuffle([
+    {t:'Diferente do código procedural, um programa lógico não descreve uma sequência explícita de passos — ele descreve relações, e a ordem de execução interna é decidida pelo motor de inferência.', ok:true},
+    {t:'Um programa lógico é sempre idêntico, linha a linha, a um programa em C, só que com outra sintaxe.', ok:false},
+    {t:'Programas lógicos não podem representar nenhum tipo de relação entre dados.', ok:false},
+    {t:'Programação lógica exige que cada fato seja executado em um laço "for" explícito.', ok:false}
+  ]);
+  return {
+    tag:'Sem passo a passo explícito', tipo:'escolha',
+    enun:'Como a programação lógica se diferencia da programação procedural quanto à forma de expressar a solução de um problema?',
+    dica:'Pense de novo em "o que" (declarar relações) vs. "como" (mandar passo a passo).',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Programas procedurais descrevem passo a passo o que o computador deve fazer. Programas lógicos descrevem relações entre fatos (o que é verdadeiro), e cabe ao motor de inferência da linguagem decidir como buscar as respostas — sem o programador especificar esse "como" em detalhe.'
+  };
+}
+
+/* --- Estação L7: Sistemas de Tipos --- */
+function l7_estaticaDinamica(){
+  const opts = shuffle([
+    {t:'Na tipagem estática, os tipos são verificados antes da execução (em tempo de compilação); na dinâmica, os tipos são verificados durante a execução do programa.', ok:true},
+    {t:'Tipagem estática significa que o programa nunca pode ter variáveis; dinâmica significa o oposto.', ok:false},
+    {t:'Tipagem estática é sempre mais lenta de escrever do que dinâmica, sem exceção.', ok:false},
+    {t:'É a diferença entre programas que rodam em servidor e programas que rodam no navegador.', ok:false}
+  ]);
+  return {
+    tag:'Estática vs. dinâmica', tipo:'escolha',
+    enun:'Qual a diferença entre tipagem estática e tipagem dinâmica?',
+    dica:'Pense em "quando" o tipo de uma variável é checado: antes ou durante a execução.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Tipagem estática verifica os tipos antes de rodar o programa (em tempo de compilação), permitindo detectar certos erros de tipo cedo. Tipagem dinâmica verifica os tipos durante a execução, dando mais flexibilidade mas adiando a detecção de alguns erros para o momento em que o código realmente roda.'
+  };
+}
+function l7_forteFraca(){
+  const opts = shuffle([
+    {t:'Tipagem forte restringe conversões implícitas entre tipos incompatíveis; tipagem fraca permite mais conversões automáticas entre tipos diferentes.', ok:true},
+    {t:'Tipagem forte significa que o programa usa mais memória RAM do que tipagem fraca.', ok:false},
+    {t:'Tipagem forte e fraca são apenas outros nomes para tipagem estática e dinâmica, sem diferença real.', ok:false},
+    {t:'Tipagem fraca é obrigatória em qualquer linguagem compilada.', ok:false}
+  ]);
+  return {
+    tag:'Forte vs. fraca', tipo:'escolha',
+    enun:'Qual a diferença entre tipagem forte e tipagem fraca?',
+    dica:'Pense em quão "solta" a linguagem é ao converter um tipo em outro sem avisar.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Tipagem forte tende a exigir conversões explícitas entre tipos incompatíveis (evitando misturar, por exemplo, texto e número sem conversão clara). Tipagem fraca permite mais coerção implícita entre tipos diferentes. É um eixo distinto (embora relacionado) de estática vs. dinâmica.'
+  };
+}
+function l7_exemploEstatica(){
+  const opts = shuffle([
+    {t:'Java', ok:true},
+    {t:'Python', ok:false},
+    {t:'JavaScript', ok:false},
+    {t:'Ruby', ok:false}
+  ]);
+  return {
+    tag:'Exemplo estática', tipo:'escolha',
+    enun:'Qual das linguagens abaixo é classicamente citada como exemplo de tipagem estática (tipos verificados antes da execução)?',
+    dica:'É a única entre as opções em que você precisa declarar o tipo da variável antes de compilar.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Java exige declaração de tipos e faz a checagem em tempo de compilação, sendo um exemplo clássico de tipagem estática. Python, JavaScript e Ruby são classicamente dinamicamente tipadas, checando tipos durante a execução.'
+  };
+}
+function l7_exemploDinamica(){
+  const opts = shuffle([
+    {t:'Python', ok:true},
+    {t:'Java', ok:false},
+    {t:'C', ok:false},
+    {t:'TypeScript', ok:false}
+  ]);
+  return {
+    tag:'Exemplo dinâmica', tipo:'escolha',
+    enun:'Qual das linguagens abaixo é classicamente citada como exemplo de tipagem dinâmica (tipos verificados durante a execução)?',
+    dica:'É a única entre as opções em que uma mesma variável pode receber um número e, depois, um texto, sem declarar tipo nenhum.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Python verifica os tipos em tempo de execução, sem exigir declaração prévia — uma mesma variável pode receber valores de tipos diferentes ao longo do programa. Java, C e TypeScript são exemplos de linguagens com tipagem estática.'
+  };
+}
+function l7_erroTipo(){
+  const opts = shuffle([
+    {t:'Em uma linguagem com tipagem estática, um erro de tipo tende a ser detectado antes de rodar (na compilação); em uma com tipagem dinâmica, pode só aparecer durante a execução.', ok:true},
+    {t:'Erros de tipo nunca acontecem em linguagens com tipagem dinâmica.', ok:false},
+    {t:'Erros de tipo só existem em linguagens compiladas, nunca em interpretadas.', ok:false},
+    {t:'Tipagem estática e dinâmica lidam com erros de tipo exatamente da mesma forma, no mesmo momento.', ok:false}
+  ]);
+  return {
+    tag:'Quando o erro aparece', tipo:'escolha',
+    enun:'Em que momento um erro de tipo (ex.: somar um número com um texto de forma inválida) tende a ser detectado, comparando tipagem estática com dinâmica?',
+    dica:'Pense de novo em "antes de rodar" vs. "durante a execução".',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'Com tipagem estática, o compilador verifica os tipos antes da execução, então muitos erros de tipo são pegos antes do programa rodar. Com tipagem dinâmica, essa checagem só acontece quando a linha de código realmente executa, então o erro pode só aparecer nesse momento — inclusive depois do programa já estar em produção.'
+  };
+}
+
+/* --- Estação L8: Sintaxe Comparada --- */
+function l8_reconhecePython(){
+  const opts = shuffle([
+    {t:'Python', ok:true},
+    {t:'Java', ok:false},
+    {t:'C', ok:false},
+    {t:'Prolog', ok:false}
+  ]);
+  return {
+    tag:'Reconhecer sintaxe', tipo:'escolha',
+    enun:'De qual linguagem é este trecho de código?\n\ndef soma(a, b):\n    return a + b',
+    dica:'Repare que não há chaves { } nem ponto e vírgula — os blocos são marcados por indentação.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'É Python: a palavra-chave "def" define uma função, e o corpo da função é delimitado por indentação (espaços), sem chaves nem ponto e vírgula — uma marca registrada da sintaxe de Python.'
+  };
+}
+function l8_reconheceJava(){
+  const opts = shuffle([
+    {t:'Java', ok:true},
+    {t:'Python', ok:false},
+    {t:'Prolog', ok:false},
+    {t:'SQL', ok:false}
+  ]);
+  return {
+    tag:'Reconhecer sintaxe', tipo:'escolha',
+    enun:'De qual linguagem é este trecho de código?\n\npublic class Main {\n  public static void main(String[] args) {\n    System.out.println("Olá");\n  }\n}',
+    dica:'Repare na verbosidade: "public class", "public static void main" — uma marca registrada dessa linguagem.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'É Java: todo programa precisa de uma classe pública e de um método "main" com essa assinatura exata (public static void main(String[] args)) como ponto de entrada — um padrão bem característico e verboso da linguagem.'
+  };
+}
+function l8_reconheceSQL(){
+  const opts = shuffle([
+    {t:'SQL', ok:true},
+    {t:'C', ok:false},
+    {t:'Java', ok:false},
+    {t:'Prolog', ok:false}
+  ]);
+  return {
+    tag:'Reconhecer sintaxe', tipo:'escolha',
+    enun:'De qual linguagem é este trecho, e que tipo de paradigma ele representa?\n\nSELECT nome FROM alunos WHERE turma = \'T33F2\';',
+    dica:'Você descreve "o que" quer (quais dados), não "como" buscar linha a linha.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'É SQL, uma linguagem declarativa usada para consultar bancos de dados: o comando descreve o resultado desejado (nomes dos alunos da turma T33F2), sem especificar o algoritmo de busca — isso fica a cargo do banco de dados.'
+  };
+}
+function l8_reconheceC(){
+  const opts = shuffle([
+    {t:'C', ok:true},
+    {t:'Python', ok:false},
+    {t:'Prolog', ok:false},
+    {t:'HTML', ok:false}
+  ]);
+  return {
+    tag:'Reconhecer sintaxe', tipo:'escolha',
+    enun:'De qual linguagem é este trecho de código?\n\n#include <stdio.h>\nint main() {\n  printf("Olá\\n");\n  return 0;\n}',
+    dica:'Repare no "#include" e na função "printf" — clássicos dessa linguagem.',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'É C: o "#include <stdio.h>" importa a biblioteca padrão de entrada/saída, "printf" imprime texto formatado, e todo programa C precisa de uma função "main" que retorna um inteiro — um padrão bem característico dessa linguagem.'
+  };
+}
+function l8_reconceProlog(){
+  const opts = shuffle([
+    {t:'Prolog', ok:true},
+    {t:'Java', ok:false},
+    {t:'C', ok:false},
+    {t:'Python', ok:false}
+  ]);
+  return {
+    tag:'Reconhecer sintaxe', tipo:'escolha',
+    enun:'De qual linguagem é este trecho de código?\n\npai(joao, maria).\npai(joao, pedro).',
+    dica:'Repare que não há comando nenhum sendo executado — são só afirmações (fatos).',
+    opcoes: opts.map(o=>o.t), correta: opts.findIndex(o=>o.ok),
+    exp:'É Prolog: cada linha declara um fato (aqui, que "joao" é pai de "maria" e de "pedro"), sem nenhum comando imperativo. É a sintaxe típica da programação lógica, bem diferente de uma sequência de instruções como em C ou Java.'
+  };
+}
+
+/* =======================================================================
+   TRILHAS (cada trilha tem sua própria trilha evolutiva de estações +
+   boss, ordem fixa, dificuldade crescente — ver research.md #6)
+   ======================================================================= */
 const PERGUNTAS_BOSS = 12;
-const RANKS = [
-  'Recruta dos Bits','Aprendiz de Bases','Tradutor Binário','Decodificador Hexa',
-  'Analista de Frações','Guardião dos Sinais','Engenheiro de Precisão','Poliglota Digital',
-  'Mestre da Representação de Dados'
-];
+
+const TRAILS = {
+  arquitetura: {
+    nome: 'Arquitetura de Computadores',
+    desc: 'Sistemas de numeração, conversões, frações binárias, negativos, ponto flutuante e codificação de caracteres.',
+    stages: [
+      { id:'e1', num:1, nome:'Fundamentos', cor:'#4FE0B0',
+        desc:'Bit, byte e a fórmula 2ⁿ.',
+        pool:[g1_sigla,g1_estados,g1_capacidade,g1_byteFaixa,g1_idadeBits,g1_nesCores,g1_atariRam,g1_word] },
+      { id:'e2', num:2, nome:'Sistemas de Numeração', cor:'#E8A33D',
+        desc:'Base, algarismos e as regras universais.',
+        pool:[g2_ondeUsa,g2_algarismos,g2_msblsb,g2_posicional,g2_maxComNDigitos,g2_chmod,g2_subscrito] },
+      { id:'e3', num:3, nome:'Decimal ⇄ Outras Bases', cor:'#59C3F0',
+        desc:'Divisões sucessivas e notação polinomial.',
+        pool:[g3_bits,g3_decHex,g3_binDec,g3_hexDec,g3_decOct,g3_idadeBin,g3_idadeHex,g3_matriculaBase] },
+      { id:'e4', num:4, nome:'Agrupamento de Bits', cor:'#9A7BFF',
+        desc:'Binário ⇄ octal/hex, e cores em hexadecimal.',
+        pool:[g4_binHex,g4_binOct,g4_hexBin,g4_octHexEspecial,g4_corReconhece,g4_corComponente,g4_nesPaleta] },
+      { id:'e5', num:5, nome:'Números Fracionários', cor:'#FF6BA6',
+        desc:'Frações binárias e por que 0,8 não termina.',
+        pool:[g5_fracBinDec,g5_fracDecBin,g5_misto,g5_dizima,g5_alphaGame,g5_pontoFixoUso] },
+      { id:'e6', num:6, nome:'Números Negativos', cor:'#F0A84B',
+        desc:'Sinal-magnitude, complemento de 1 e de 2.',
+        pool:[g6_sinalMag,g6_c1,g6_c2,g6_vantagens,g6_menos128,g6_excesso128,g6_gandhi,g6_idadeC2] },
+      { id:'e7', num:7, nome:'Ponto Flutuante', cor:'#F06B6B',
+        desc:'Normalização e o padrão IEEE 754.',
+        pool:[g7_pontoFixoVsFlutuante,g7_010203,g7_casosEspeciais,g7_normalizar,g7_ieeeCompleto,g7_formatos,g7_overUnder,g7_bcd] },
+      { id:'e8', num:8, nome:'Codificação de Caracteres', cor:'#7EE081',
+        desc:'ASCII, UTF-8 — e o seu próprio nome em bits.',
+        pool:[g8_asciiBits,g8_codifica,g8_decodifica,g8_bit5,g8_utf8,g8_nomeParaAscii,g8_nomeDeBinario,g8_matriculaDigitoAscii,g8_unicodeTrivia] },
+      { id:'boss', num:'★', nome:'Certificação Final', cor:'#d4304f', boss:true,
+        desc:'Questões sorteadas de todas as estações, pontuação dobrada.',
+        pool:[] }
+    ],
+    ranks: [
+      'Recruta dos Bits','Aprendiz de Bases','Tradutor Binário','Decodificador Hexa',
+      'Analista de Frações','Guardião dos Sinais','Engenheiro de Precisão','Poliglota Digital',
+      'Mestre da Representação de Dados'
+    ]
+  },
+  linguagens: {
+    nome: 'Linguagens de Programação e Paradigmas',
+    desc: 'Compilação vs. interpretação, paradigmas imperativo, orientado a objetos, funcional e lógico, sistemas de tipos e sintaxe comparada.',
+    stages: [
+      { id:'l1', num:1, nome:'Fundamentos de Linguagens', cor:'#66D9C2',
+        desc:'O que é uma linguagem, código-fonte, compilação vs. interpretação.',
+        pool:[l1_oQueE,l1_codigoFonte,l1_compiladoVsInterpretado,l1_exemploCompilada,l1_traducao] },
+      { id:'l2', num:2, nome:'Paradigmas Fundamentais', cor:'#F2B84B',
+        desc:'Imperativo vs. declarativo — a divisão que organiza todos os outros.',
+        pool:[l2_imperativoDef,l2_declarativoDef,l2_exemploImperativo,l2_estadoMutavel,l2_paradigmaMultiplo] },
+      { id:'l3', num:3, nome:'Paradigma Estruturado', cor:'#5FA8FF',
+        desc:'Funções, fluxo de controle e o fim do goto descontrolado.',
+        pool:[l3_funcaoDef,l3_fluxoControle,l3_exemploLinguagem,l3_gotoProblem,l3_modularidade] },
+      { id:'l4', num:4, nome:'Orientação a Objetos', cor:'#B98BFF',
+        desc:'Classe, objeto, herança, encapsulamento e polimorfismo.',
+        pool:[l4_classeObjeto,l4_heranca,l4_encapsulamento,l4_polimorfismo,l4_exemploLinguagem] },
+      { id:'l5', num:5, nome:'Paradigma Funcional', cor:'#FF8FBF',
+        desc:'Funções puras, imutabilidade e recursão.',
+        pool:[l5_funcaoPura,l5_imutabilidade,l5_recursao,l5_exemploLinguagem,l5_efeitoColateral] },
+      { id:'l6', num:6, nome:'Paradigma Lógico', cor:'#FFA65C',
+        desc:'Fatos, regras e inferência — programar descrevendo relações.',
+        pool:[l6_fatoRegra,l6_prologExemplo,l6_inferencia,l6_declarativoLogico,l6_naoStep] },
+      { id:'l7', num:7, nome:'Sistemas de Tipos', cor:'#FF7A7A',
+        desc:'Tipagem estática vs. dinâmica, forte vs. fraca.',
+        pool:[l7_estaticaDinamica,l7_forteFraca,l7_exemploEstatica,l7_exemploDinamica,l7_erroTipo] },
+      { id:'l8', num:8, nome:'Sintaxe Comparada', cor:'#8CE99A',
+        desc:'Reconhecer de qual linguagem é um trecho de código.',
+        pool:[l8_reconhecePython,l8_reconheceJava,l8_reconheceSQL,l8_reconheceC,l8_reconceProlog] },
+      { id:'boss', num:'★', nome:'Certificação Final', cor:'#d4304f', boss:true,
+        desc:'Questões sorteadas de todas as estações, pontuação dobrada.',
+        pool:[] }
+    ],
+    ranks: [
+      'Aprendiz de Sintaxe','Explorador de Paradigmas','Programador Estruturado','Arquiteto de Objetos',
+      'Pensador Funcional','Lógico Declarativo','Guardião dos Tipos','Poliglota de Linguagens',
+      'Mestre dos Paradigmas'
+    ]
+  }
+};
 
 /* =======================================================================
    ESTADO
    ======================================================================= */
 let S = null;
-function novoJogo(nome, turma, idadeRaw, matriculaRaw){
+function novoJogo(nome, turma, idadeRaw, matriculaRaw, trilhaId){
   const idadeNum = parseInt(String(idadeRaw||'').replace(/\D/g,''),10);
   const idade = (Number.isFinite(idadeNum) && idadeNum>=14 && idadeNum<=90) ? idadeNum : R(17,45);
   const matDigits = String(matriculaRaw||'').replace(/\D/g,'');
@@ -1639,11 +2333,12 @@ function novoJogo(nome, turma, idadeRaw, matriculaRaw){
   const primeiroNomeBruto = String(nome||'').trim().split(/\s+/)[0]||'ALUNO';
   const primeiroNome = (primeiroNomeBruto.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z]/g,'')||'ALUNO').slice(0,8);
   S = { nome:nome||'operador', turma:turma, idade:idade, matricula:matricula, primeiroNome:primeiroNome,
+        trilhaId: TRAILS[trilhaId] ? trilhaId : 'arquitetura',
         xp:0, acertos:0, total:0,
         estagios:{}, estagioAtual:null, fila:[], qi:0, inicio:Date.now(), dicas:0, codigo:null };
-  STAGES.forEach(f => S.estagios[f.id] = {feito:false, acertos:0, total:0, xp:0});
+  TRAILS[S.trilhaId].stages.forEach(f => S.estagios[f.id] = {feito:false, acertos:0, total:0, xp:0});
 }
-function nivelAtual(){ return STAGES.filter(f=>!f.boss && S.estagios[f.id].feito).length; }
+function nivelAtual(){ return TRAILS[S.trilhaId].stages.filter(f=>!f.boss && S.estagios[f.id].feito).length; }
 function atualizarStatus(){
   $('stXp').textContent = nf(S.xp);
   $('stPre').textContent = S.total ? Math.round(100*S.acertos/S.total)+'%' : '—';
@@ -1659,9 +2354,10 @@ function mostrar(tela){
    TRILHA
    ======================================================================= */
 function renderTrilha(){
+  const trilha = TRAILS[S.trilhaId];
   const completas = nivelAtual();
   let html = '';
-  STAGES.forEach((f,i)=>{
+  trilha.stages.forEach((f,i)=>{
     if(i>0) html += '<span class="arrow">▸</span>';
     const st = f.boss ? null : S.estagios[f.id];
     let estado;
@@ -1685,20 +2381,21 @@ function renderTrilha(){
     b.onclick = () => iniciarFase(b.dataset.fase);
   });
   $('trilhaMsg').innerHTML = completas < 8
-    ? 'Nível atual: <b style="color:var(--copper)">'+RANKS[completas]+'</b> — '+completas+' de 8 estações concluídas.'
-    : 'Todas as 8 estações concluídas — nível <b style="color:var(--copper)">'+RANKS[8]+'</b>. A certificação final está liberada.';
+    ? 'Nível atual: <b style="color:var(--copper)">'+trilha.ranks[completas]+'</b> — '+completas+' de 8 estações concluídas.'
+    : 'Todas as 8 estações concluídas — nível <b style="color:var(--copper)">'+trilha.ranks[8]+'</b>. A certificação final está liberada.';
 }
 
 /* =======================================================================
    ESTAÇÃO / PERGUNTAS
    ======================================================================= */
 function iniciarFase(id){
-  const f = STAGES.find(x=>x.id===id);
+  const stages = TRAILS[S.trilhaId].stages;
+  const f = stages.find(x=>x.id===id);
   S.estagioAtual = f;
   S.qi = 0; S.faseAcertos = 0; S.faseXp = 0;
   if(f.boss){
     let pool = [];
-    STAGES.filter(x=>!x.boss).forEach(x => pool = pool.concat(x.pool));
+    stages.filter(x=>!x.boss).forEach(x => pool = pool.concat(x.pool));
     S.fila = shuffle(pool).slice(0,PERGUNTAS_BOSS).map(g=>g());
   }else{
     S.fila = f.pool.map(g=>g());
@@ -1863,7 +2560,7 @@ function fimFase(){
   $('fzMsg').textContent = f.boss
     ? 'Você respondeu '+acertos+' de '+total+' questões da certificação final.'
     : 'Estação '+f.nome+': '+acertos+' de '+total+' corretas. '+(perfeito?'Mandou bem!':'Refazer gera outros valores, se quiser praticar mais.');
-  $('fzRank').innerHTML = f.boss ? '' : 'Nível atualizado: <b>'+RANKS[nivelAtual()]+'</b>';
+  $('fzRank').innerHTML = f.boss ? '' : 'Nível atualizado: <b>'+TRAILS[S.trilhaId].ranks[nivelAtual()]+'</b>';
   $('fzAc').textContent = acertos+'/'+total;
   $('fzPt').textContent = nf(S.faseXp);
   mostrar('telaFase');
@@ -1875,7 +2572,8 @@ function fimFase(){
    ======================================================================= */
 function gerarCodigo(){
   const dataStr = new Date().toISOString().slice(0,10);
-  const base = (S.nome.toUpperCase().replace(/\s+/g,'')+'|'+S.turma+'|'+dataStr+'|'+S.xp+'|'+S.acertos+'/'+S.total+'|UNIDAVI-ARQCOMP-A0203');
+  const trilhaTag = S.trilhaId==='linguagens' ? 'LINGPARAD' : 'ARQCOMP';
+  const base = (S.nome.toUpperCase().replace(/\s+/g,'')+'|'+S.turma+'|'+dataStr+'|'+S.xp+'|'+S.acertos+'/'+S.total+'|UNIDAVI-'+trilhaTag+'-A0203');
   let h1 = 5381, h2 = 52711;
   for(let i=0;i<base.length;i++){
     const c = base.charCodeAt(i);
@@ -1887,16 +2585,17 @@ function gerarCodigo(){
   return s.slice(0,3)+'-'+s.slice(3,7)+' · '+dataStr.slice(5).replace('-','')  ;
 }
 function textoRelatorio(){
+  const trilha = TRAILS[S.trilhaId];
   const pc = S.total ? Math.round(100*S.acertos/S.total) : 0;
-  let t = 'BIT LAB — Trilha de Arquitetura de Computadores | Aulas 02 e 03 — UNIDAVI\n';
+  let t = 'BIT LAB — Trilha de '+trilha.nome+' | UNIDAVI\n';
   t += 'Nome: '+S.nome+'\n';
   t += 'Turma: '+S.turma+'\n';
   t += 'Matrícula: '+S.matricula+'\n';
   t += 'Data/Hora: '+new Date().toLocaleString('pt-BR')+'\n';
-  t += 'Nível final: '+RANKS[8]+'\n';
+  t += 'Nível final: '+trilha.ranks[8]+'\n';
   t += 'Resultado geral: '+S.acertos+'/'+S.total+' ('+pc+'%) — '+nf(S.xp)+' pontos\n\n';
   t += 'Desempenho por estação:\n';
-  STAGES.forEach(f=>{
+  trilha.stages.forEach(f=>{
     const st = S.estagios[f.id];
     t += '  - '+f.nome+': '+(st.total ? st.acertos+'/'+st.total : 'não realizada')+'\n';
   });
@@ -1905,11 +2604,12 @@ function textoRelatorio(){
   return t;
 }
 function telaCertificacao(){
+  const trilha = TRAILS[S.trilhaId];
   if(!S.codigo) S.codigo = gerarCodigo();
   const pc = S.total ? Math.round(100*S.acertos/S.total) : 0;
-  $('certRank').textContent = RANKS[8];
+  $('certRank').textContent = trilha.ranks[8];
   $('certMsg').innerHTML = '<b>'+S.nome+'</b> ('+S.turma+') — '+S.acertos+' acertos em '+S.total+' questões ('+pc+'%), '+nf(S.xp)+' pontos totais.';
-  $('certBars').innerHTML = STAGES.filter(f=>!f.boss).map(f=>{
+  $('certBars').innerHTML = trilha.stages.filter(f=>!f.boss).map(f=>{
     const st = S.estagios[f.id];
     const p = st.total ? Math.round(100*st.acertos/st.total) : 0;
     return '<div class="barrow"><span>'+f.nome+'</span><span class="track"><i style="width:'+p+'%"></i></span><span class="pc">'+(st.total? p+'%' : '—')+'</span></div>';
@@ -1926,15 +2626,61 @@ $('segTurma').addEventListener('click', e=>{
   const b = e.target.closest('button'); if(!b) return;
   Array.from($('segTurma').children).forEach(c=>c.classList.toggle('on', c===b));
 });
-$('btComecar').onclick = () => {
+function atualizarTrilhaDesc(){
+  const id = $('segTrilha').querySelector('.on').dataset.trilha;
+  $('trilhaDesc').textContent = TRAILS[id].desc;
+}
+$('segTrilha').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  Array.from($('segTrilha').children).forEach(c=>c.classList.toggle('on', c===b));
+  atualizarTrilhaDesc();
+});
+atualizarTrilhaDesc();
+function mostrarErroCadastro(msg){
+  const el = $('cadastroMsg');
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
+$('btComecar').onclick = async () => {
+  mostrarErroCadastro('');
   const nome = $('inNome').value.trim();
   if(!nome){ $('inNome').focus(); $('inNome').style.borderColor = 'var(--err)'; return; }
+
+  const email = $('inEmail').value.trim();
+  if(!/^[^\s@]+@unidavi\.edu\.br$/i.test(email)){
+    $('inEmail').focus();
+    mostrarErroCadastro('Use um e-mail institucional do domínio @unidavi.edu.br.');
+    return;
+  }
+
   const turma = $('segTurma').querySelector('.on').dataset.turma;
-  novoJogo(nome, turma, $('inIdade').value, $('inMatricula').value);
-  atualizarStatus();
-  renderTrilha();
-  mostrar('telaTrilha');
-  beep(660,.09); setTimeout(()=>beep(880,.12),90);
+  const trilhaId = $('segTrilha').querySelector('.on').dataset.trilha;
+  const idade = parseInt(String($('inIdade').value||'').replace(/\D/g,''),10) || 18;
+  const matricula = String($('inMatricula').value||'').replace(/\D/g,'') || String(R(10000,9999999));
+
+  $('btComecar').disabled = true;
+  try {
+    await apiFetch('/api/alunos/cadastro', {
+      method:'POST',
+      body: JSON.stringify({ nome, idade, matricula, turma, email })
+    });
+
+    const { habilitado } = await apiFetch(`/api/alunos/${encodeURIComponent(matricula)}/habilitacoes/${trilhaId}`);
+    if(!habilitado){
+      mostrarErroCadastro('Você ainda não está habilitado para essa trilha. Peça ao professor para liberar seu acesso.');
+      return;
+    }
+
+    novoJogo(nome, turma, idade, matricula, trilhaId);
+    atualizarStatus();
+    renderTrilha();
+    mostrar('telaTrilha');
+    beep(660,.09); setTimeout(()=>beep(880,.12),90);
+  } catch(e) {
+    mostrarErroCadastro(e.message);
+  } finally {
+    $('btComecar').disabled = false;
+  }
 };
 $('btVerificar').onclick = acaoPrincipal;
 $('btDica').onclick = () => {
