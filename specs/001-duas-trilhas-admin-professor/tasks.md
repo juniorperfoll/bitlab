@@ -186,3 +186,27 @@ Task: "Autorar pools de pergunta da trilha de Linguagens em index.html"  # T015 
 Com mais de uma pessoa: uma pessoa toca US1 (puro front-end) desde o início; outra
 completa o Foundational e então segue para US2 e US3 (ambas backend + front-end,
 independentes entre si).
+
+---
+
+## Nota de migração (2026-08-18)
+
+As tarefas acima documentam a implementação original em **Cloudflare Workers + D1**.
+Depois de concluídas, o usuário decidiu rodar o projeto como **monolito Node.js +
+Express + SQLite (`better-sqlite3`)**, hospedado como um único Render Web Service —
+ver research.md decisões #1, #2 e #8 para o racional completo. Essa migração:
+
+- Manteve 100% do contrato de negócio (mesmas rotas, payloads, mensagens, regras de
+  habilitação) — nenhuma tarefa de US1/US2/US3 precisou ser refeita do zero.
+- Substituiu `backend/wrangler.toml` + roteador manual por `backend/server.js`
+  (Express) e `backend/src/app.js` (fábrica de app, usada também nos testes).
+- Moveu `index.html`/`admin.html` da raiz do repositório para `backend/public/`.
+- Trocou os testes de `@cloudflare/vitest-pool-workers` para `vitest` + `supertest`
+  contra a instância Express, com SQLite `:memory:` por teste.
+- Adicionou autoprovisionamento da credencial do professor via
+  `ADMIN_USUARIO`/`ADMIN_SENHA` no boot do servidor, para compensar a ausência de
+  disco persistente no tier gratuito do Render (ver research.md #8).
+
+Esta seção não reabre as tarefas T001-T037 acima (permanecem `[X]` como registro
+histórico do que foi construído); a lista de arquivos atual é a do
+`Project Structure` em `plan.md`, já atualizado para a nova arquitetura.

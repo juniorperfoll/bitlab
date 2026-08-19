@@ -6,8 +6,6 @@ import {
   deleteHabilitacaoIndividual,
   getHabilitacaoResolvida,
 } from './db.js';
-import { jsonResponse, errorResponse } from './http.js';
-import { exigirAuth } from './auth.js';
 
 export const TURMAS_VALIDAS = ['T33F2', 'T34F2'];
 export const TRILHAS_VALIDAS = ['arquitetura', 'linguagens'];
@@ -21,83 +19,71 @@ function trilhaValida(trilha) {
 }
 
 // POST /api/turmas/:turma/habilitacoes (auth) — FR-007, SC-001.
-export async function habilitarTurmaHandler({ request, env, params }) {
-  const { erro } = await exigirAuth(request, env);
-  if (erro) return erro;
-
-  if (!turmaValida(params.turma)) {
-    return errorResponse('Turma inválida. Use T33F2 ou T34F2.', 400);
+export function habilitarTurmaHandler(req, res) {
+  if (!turmaValida(req.params.turma)) {
+    return res.status(400).json({ mensagem: 'Turma inválida. Use T33F2 ou T34F2.' });
   }
 
-  const body = await request.json().catch(() => null);
-  if (!body || !trilhaValida(body.trilha)) {
-    return errorResponse('Trilha inválida.', 400);
+  const { trilha } = req.body || {};
+  if (!trilhaValida(trilha)) {
+    return res.status(400).json({ mensagem: 'Trilha inválida.' });
   }
 
-  await upsertHabilitacaoTurma(env.DB, params.turma, body.trilha, true);
-  return jsonResponse({ ok: true });
+  upsertHabilitacaoTurma(req.app.locals.db, req.params.turma, trilha, true);
+  res.json({ ok: true });
 }
 
 // DELETE /api/turmas/:turma/habilitacoes/:trilha (auth) — revoga a habilitação em
 // lote da turma (não afeta exceções individuais já concedidas separadamente).
-export async function revogarTurmaHandler({ request, env, params }) {
-  const { erro } = await exigirAuth(request, env);
-  if (erro) return erro;
-
-  if (!turmaValida(params.turma) || !trilhaValida(params.trilha)) {
-    return errorResponse('Turma ou trilha inválida.', 400);
+export function revogarTurmaHandler(req, res) {
+  if (!turmaValida(req.params.turma) || !trilhaValida(req.params.trilha)) {
+    return res.status(400).json({ mensagem: 'Turma ou trilha inválida.' });
   }
 
-  await deleteHabilitacaoTurma(env.DB, params.turma, params.trilha);
-  return jsonResponse({ ok: true });
+  deleteHabilitacaoTurma(req.app.locals.db, req.params.turma, req.params.trilha);
+  res.json({ ok: true });
 }
 
 // POST /api/alunos/:matricula/habilitacoes (auth) — FR-008: concede ou revoga
 // (concedida:false) individualmente, inclusive como exceção sobre a turma.
-export async function habilitarAlunoHandler({ request, env, params }) {
-  const { erro } = await exigirAuth(request, env);
-  if (erro) return erro;
-
-  const aluno = await getAlunoByMatricula(env.DB, params.matricula);
+export function habilitarAlunoHandler(req, res) {
+  const aluno = getAlunoByMatricula(req.app.locals.db, req.params.matricula);
   if (!aluno) {
-    return errorResponse('Aluno não encontrado para essa matrícula.', 404);
+    return res.status(404).json({ mensagem: 'Aluno não encontrado para essa matrícula.' });
   }
 
-  const body = await request.json().catch(() => null);
-  if (!body || !trilhaValida(body.trilha) || typeof body.concedida !== 'boolean') {
-    return errorResponse('Informe trilha válida e concedida (true/false).', 400);
+  const { trilha, concedida } = req.body || {};
+  if (!trilhaValida(trilha) || typeof concedida !== 'boolean') {
+    return res.status(400).json({ mensagem: 'Informe trilha válida e concedida (true/false).' });
   }
 
-  await upsertHabilitacaoIndividual(env.DB, aluno.id, body.trilha, body.concedida);
-  return jsonResponse({ ok: true });
+  upsertHabilitacaoIndividual(req.app.locals.db, aluno.id, trilha, concedida);
+  res.json({ ok: true });
 }
 
 // DELETE /api/alunos/:matricula/habilitacoes/:trilha (auth) — remove a exceção
 // individual, voltando a valer só a habilitação de turma (se houver).
-export async function revogarAlunoHandler({ request, env, params }) {
-  const { erro } = await exigirAuth(request, env);
-  if (erro) return erro;
-
-  const aluno = await getAlunoByMatricula(env.DB, params.matricula);
+export function revogarAlunoHandler(req, res) {
+  const aluno = getAlunoByMatricula(req.app.locals.db, req.params.matricula);
   if (!aluno) {
-    return errorResponse('Aluno não encontrado para essa matrícula.', 404);
+    return res.status(404).json({ mensagem: 'Aluno não encontrado para essa matrícula.' });
   }
 
-  if (!trilhaValida(params.trilha)) {
-    return errorResponse('Trilha inválida.', 400);
+  if (!trilhaValida(req.params.trilha)) {
+    return res.status(400).json({ mensagem: 'Trilha inválida.' });
   }
 
-  await deleteHabilitacaoIndividual(env.DB, aluno.id, params.trilha);
-  return jsonResponse({ ok: true });
+  deleteHabilitacaoIndividual(req.app.locals.db, aluno.id, req.params.trilha);
+  res.json({ ok: true });
 }
 
 // GET /api/alunos/:matricula/habilitacoes/:trilha (público) — FR-009, US3.
-// Chamado pelo index.html antes de iniciar a trilha escolhida.
-export async function verificarHabilitacaoHandler({ params, env }) {
-  if (!trilhaValida(params.trilha)) {
-    return errorResponse('Trilha inválida.', 400);
+// Chamado pela tela inicial do jogo antes de iniciar a trilha escolhida.
+export function verificarHabilitacaoHandler(req, res) {
+  if (!trilhaValida(req.params.trilha)) {
+    return res.status(400).json({ mensagem: 'Trilha inválida.' });
   }
 
-  const habilitado = await getHabilitacaoResolvida(env.DB, params.matricula, params.trilha);
-  return jsonResponse({ habilitado });
+  const habilitado = getHabilitacaoResolvida(req.app.locals.db, req.params.matricula, req.params.trilha);
+  res.json({ habilitado });
 }

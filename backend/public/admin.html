@@ -135,8 +135,8 @@ th{color:var(--dim);font-weight:600;font-size:.8rem;text-transform:uppercase}
 </div>
 
 <script>
-// Ajuste para a URL do backend implantado (ver backend/wrangler.toml / quickstart.md).
-const API_BASE = 'http://localhost:8787';
+// Monolito: front-end e API respondem na mesma origem, sem necessidade de CORS.
+const API_BASE = '';
 
 let token = sessionStorage.getItem('bitlab_admin_token') || null;
 

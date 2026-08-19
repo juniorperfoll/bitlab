@@ -47,21 +47,30 @@ Fixação de conteúdo pós-aula via prática gamificada, e **comprovação de p
 
 ## Área administrativa
 
-`admin.html` é o painel do professor: login com usuário/senha, lista de alunos
-cadastrados e ações para habilitar ou revogar o acesso de uma turma inteira ou de um
-aluno individual a cada trilha. Detalhes técnicos em
+`backend/public/admin.html` é o painel do professor: login com usuário/senha, lista
+de alunos cadastrados e ações para habilitar ou revogar o acesso de uma turma inteira
+ou de um aluno individual a cada trilha. Detalhes técnicos em
 [`specs/001-duas-trilhas-admin-professor/`](specs/001-duas-trilhas-admin-professor/)
 (spec, plano, contrato de API e guia de validação).
 
 ## Estado atual
 
-`index.html` e `admin.html` continuam páginas estáticas em HTML/CSS/JS puro, sem
-build. A única parte com backend é um serviço mínimo (`backend/`, Cloudflare Workers
-+ banco D1) exclusivamente para autenticação do professor e habilitação de alunos —
-escopo autorizado pelo Princípio II (v2.0.0) da
-[constituição do projeto](.specify/memory/constitution.md). Nenhum outro dado de
-jogo é persistido: respostas e progresso dentro de uma trilha em andamento continuam
-vivendo só em memória do navegador.
+O projeto roda como um **monolito único** em `backend/`: um processo Node.js
+(Express) serve tanto o jogo e o painel (`backend/public/index.html`,
+`backend/public/admin.html`, HTML/CSS/JS puro, sem build) quanto a API mínima
+(`/api/*`), com SQLite local (`better-sqlite3`) como banco — escopo de persistência
+autorizado pelo Princípio II (v2.0.0) da
+[constituição do projeto](.specify/memory/constitution.md) e limitado a autenticação
+do professor e habilitação de alunos. Nenhum outro dado de jogo é persistido:
+respostas e progresso dentro de uma trilha em andamento continuam vivendo só em
+memória do navegador.
+
+Hospedado como um único **Render Web Service** (tier gratuito). Isso significa que,
+por enquanto, o arquivo SQLite reseta a cada deploy/reinício do serviço — a
+credencial do professor sobrevive porque é reprovisionada por variável de ambiente a
+cada boot, mas cadastros de aluno e habilitações concedidas precisam ser refeitos
+depois de um redeploy. Detalhes e passo a passo de implantação em
+[`quickstart.md`](specs/001-duas-trilhas-admin-professor/quickstart.md).
 
 Referência bibliográfica usada no conteúdo de Arquitetura de Computadores:
 STALLINGS, W. *Arquitetura e organização de computadores*. 10. ed. São Paulo:

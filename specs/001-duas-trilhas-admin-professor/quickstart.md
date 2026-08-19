@@ -6,43 +6,61 @@ não duplicadas aqui.
 
 ## Pré-requisitos
 
-- Conta Cloudflare (tier gratuito) com Workers e D1 habilitados.
-- `wrangler` instalado (`npm install -g wrangler` ou `npx wrangler`).
-- Navegador para abrir `index.html` e `admin.html` localmente.
+- Node.js instalado localmente (qualquer versão LTS recente).
+- Conta Render (tier gratuito é suficiente — ver limitação de disco na seção 12).
+- Navegador para abrir o jogo/painel (local ou já implantado).
 
-## 1. Provisionar o backend
+## 1. Instalar e rodar o backend localmente
 
 ```bash
 cd backend
-wrangler d1 create bitlab-db          # cria o banco, anote o database_id no wrangler.toml
-wrangler d1 execute bitlab-db --file=migrations/0001_init.sql
+npm install
+npm run dev          # node --watch server.js, escuta em http://localhost:3000
 ```
+
+Sem `ADMIN_USUARIO`/`ADMIN_SENHA` definidos, o servidor sobe sem nenhum professor
+cadastrado — use o passo 2 para semear localmente.
 
 ## 2. Provisionar a credencial inicial do professor (FR-017)
 
-Sem tela de "criar conta" no app — a credencial é inserida diretamente no banco
-durante a implantação (ver research.md #3 para o esquema de hash):
+Sem tela de "criar conta" no app. Duas formas, dependendo do ambiente:
 
+**Local (desenvolvimento)** — grava direto no arquivo SQLite local:
 ```bash
-wrangler d1 execute bitlab-db --command \
-  "INSERT INTO professores (usuario, senha_hash, senha_salt, criado_em) VALUES ('ademar', '<hash>', '<salt>', datetime('now'));"
+node scripts/seed-professor.js ademar "sua-senha-aqui"
 ```
 
-(`<hash>`/`<salt>` gerados por um script local que usa o mesmo algoritmo PBKDF2 do
-Worker — não commitar senha em texto claro em lugar nenhum.)
+**Produção (Render, sem disco persistente)** — configure as variáveis de ambiente
+`ADMIN_USUARIO` e `ADMIN_SENHA` no painel do serviço Render; o `server.js`
+autoprovisiona/atualiza a credencial a cada boot (ver research.md #8). Isso também é
+o mecanismo de redefinição manual de senha (FR-012): trocar o valor de `ADMIN_SENHA`
+no painel e reiniciar o serviço.
 
-## 3. Rodar o backend localmente
+## 3. Abrir o jogo e o painel
 
-```bash
-wrangler dev
-```
+Com `npm run dev` rodando, abra `http://localhost:3000/` (jogo) e
+`http://localhost:3000/admin.html` (painel do professor) — o mesmo processo serve os
+dois, sem configuração de URL adicional (front-end usa caminhos relativos, mesma
+origem).
 
-Anote a URL local (ex.: `http://localhost:8787`) e aponte `index.html`/`admin.html`
-para ela (constante de configuração no topo de cada arquivo).
+## Deploy no Render (produção)
+
+1. No painel do Render, criar um **Web Service** (não Static Site) apontando para
+   este repositório.
+2. **Root Directory**: `backend`.
+3. **Build Command**: `npm install`.
+4. **Start Command**: `npm start`.
+5. **Environment Variables**: definir `ADMIN_USUARIO` e `ADMIN_SENHA` com a
+   credencial do professor (ver seção 2 e research.md #8). Render injeta `PORT`
+   automaticamente — `server.js` já escuta em `process.env.PORT`.
+6. Depois do primeiro deploy, o jogo fica em `https://<seu-servico>.onrender.com/` e
+   o painel em `https://<seu-servico>.onrender.com/admin.html` — mesma origem, sem
+   configuração extra de URL no front-end.
+7. Ver seção 12 sobre a limitação de disco efêmero neste tier.
 
 ## 4. Validar cadastro de aluno com domínio de e-mail (FR-016)
 
-1. Abrir `index.html` no navegador.
+1. Abrir `http://localhost:3000/` no navegador.
 2. Preencher o formulário inicial com um e-mail fora de `@unidavi.edu.br`.
 3. **Esperado**: cadastro rejeitado com mensagem em português explicando o domínio
    exigido, sem avançar para a escolha de trilha.
@@ -58,7 +76,7 @@ para ela (constante de configuração no topo de cada arquivo).
 
 ## 6. Validar login administrativo (FR-004, FR-019)
 
-1. Abrir `admin.html`.
+1. Abrir `http://localhost:3000/admin.html`.
 2. Tentar login com senha errada algumas vezes seguidas.
 3. **Esperado**: sempre 401/mensagem de erro, nunca um bloqueio temporário (FR-019).
 4. Logar com a credencial provisionada no passo 2.
@@ -69,7 +87,7 @@ para ela (constante de configuração no topo de cada arquivo).
 1. No painel, habilitar a turma do aluno de teste para a trilha "Arquitetura de
    Computadores".
 2. **Esperado**: ação completa em menos de 1 minuto, uma única interação.
-3. Voltar ao `index.html` com o mesmo aluno e escolher essa trilha.
+3. Voltar à página inicial com o mesmo aluno e escolher essa trilha.
 4. **Esperado**: acesso liberado, jogo inicia normalmente; a outra trilha continua
    bloqueada (FR-002, User Story 3 cenário 2).
 
@@ -83,9 +101,13 @@ para ela (constante de configuração no topo de cada arquivo).
 ## 9. Validar persistência entre dispositivos (SC-004, FR-010)
 
 1. Repetir o passo 7 (acesso liberado) em um navegador/dispositivo diferente do usado
-   para o cadastro original, usando a mesma matrícula.
+   para o cadastro original, usando a mesma matrícula, **sem reiniciar o servidor
+   entre um passo e outro**.
 2. **Esperado**: habilitação continua válida — não depende de `localStorage` do
-   dispositivo original, e sim do backend.
+   dispositivo original, e sim do banco do backend.
+3. **Atenção (tier gratuito do Render)**: isso só vale enquanto o processo/container
+   não reinicia. Um redeploy ou reinício por inatividade reseta o SQLite inteiro —
+   ver seção 12.
 
 ## 10. Validar rejeição de turma inválida (FR-013)
 
@@ -96,7 +118,27 @@ para ela (constante de configuração no topo de cada arquivo).
 
 ## 11. Validar redefinição manual de senha (FR-012)
 
-1. Simular "esqueci a senha": rodar novamente o `UPDATE` de `senha_hash`/`senha_salt`
-   diretamente no D1 (mesmo procedimento do passo 2), limpando também `token_ativo`.
-2. **Esperado**: login antigo (token anterior) deixa de funcionar; login com a nova
-   senha funciona.
+1. Simular "esqueci a senha":
+   - Local: `node scripts/seed-professor.js ademar "nova-senha"` novamente.
+   - Produção: trocar `ADMIN_SENHA` no painel do Render e reiniciar o serviço.
+2. **Esperado**: login com a senha antiga deixa de funcionar; qualquer token de
+   sessão anterior é invalidado (a atualização de credencial zera `token_ativo`);
+   login com a nova senha funciona.
+
+## 12. Limitação conhecida: sem disco persistente no tier gratuito do Render
+
+Por decisão consciente do projeto (ver research.md #1, #2, #8), o Render está
+configurado no tier gratuito, sem Persistent Disk. Consequências a ter em mente ao
+usar em produção:
+
+- O arquivo SQLite (`backend/data/bitlab.db`) — e com ele todo cadastro de aluno e
+  toda habilitação concedida — é perdido a cada novo deploy e a cada vez que o
+  container reinicia por inatividade prolongada.
+- A credencial do professor **sobrevive** a isso, porque é reprovisionada a cada
+  boot a partir das variáveis de ambiente `ADMIN_USUARIO`/`ADMIN_SENHA` configuradas
+  no painel do Render (não depende do arquivo SQLite).
+- Na prática: alunos e habilitações concedidas antes de um redeploy precisam ser
+  recadastrados/reabilitados depois. Isso é aceitável como estado atual do projeto,
+  mas se o uso em sala se tornar recorrente, o próximo passo natural é anexar um
+  Persistent Disk do Render (plano pago) e apontar `DB_PATH` para o caminho montado
+  — nenhuma mudança de código é necessária além disso.

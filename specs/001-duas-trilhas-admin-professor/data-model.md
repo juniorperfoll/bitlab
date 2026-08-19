@@ -1,6 +1,6 @@
 # Data Model: Duas Trilhas e Área Administrativa do Professor
 
-Escopo de persistência real (banco D1) é exatamente o autorizado pelo Princípio II
+Escopo de persistência real (SQLite local via `better-sqlite3`) é exatamente o autorizado pelo Princípio II
 (v2.0.0) da constituição: credencial do professor e cadastro/habilitação de alunos.
 O conteúdo das trilhas (estações, perguntas, `TRAILS` no `index.html`) **não** é
 persistido em banco — continua vivendo como dado estático no front-end, igual ao

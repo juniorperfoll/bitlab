@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BIT LAB — Trilha de Arquitetura de Computadores | UNIDAVI</title>
+<title>BIT LAB — Trilhas de Arquitetura de Computadores e Linguagens | UNIDAVI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -602,8 +602,8 @@ const V = s => '<span class="val">'+s+'</span>';
 const PESOS = [128,64,32,16,8,4,2,1];
 
 /* ---------------- backend mínimo (cadastro + habilitação, ver contracts/api.md) ---------------- */
-// Ajuste para a URL do backend implantado (ver backend/wrangler.toml / quickstart.md).
-const API_BASE = 'http://localhost:8787';
+// Monolito: front-end e API respondem na mesma origem, sem necessidade de CORS.
+const API_BASE = '';
 async function apiFetch(path, opcoes){
   const resp = await fetch(API_BASE + path, {
     headers: { 'Content-Type':'application/json' },

@@ -1,7 +1,9 @@
 # Contrato da API — Backend Mínimo (Autenticação e Habilitação)
 
-Base URL: definida no deploy (ex.: `https://bitlab-api.<subdomínio>.workers.dev`).
-Todas as respostas são JSON. Todas as mensagens de erro voltadas ao usuário final
+Base URL: mesma origem do jogo/painel — o monolito Express serve `/api/*` no mesmo
+processo/domínio que `public/index.html` e `public/admin.html` (ex.:
+`https://bitlab.onrender.com/api/login`). Não há CORS a configurar, já que front-end
+e API sempre respondem pela mesma origem. Todas as respostas são JSON. Todas as mensagens de erro voltadas ao usuário final
 (campo `mensagem`) MUST estar em português brasileiro (Princípio I).
 
 Autenticação: rotas marcadas **(auth)** exigem cabeçalho

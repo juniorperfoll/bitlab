@@ -1,54 +1,51 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { env } from 'cloudflare:test';
-import { loginHandler, logoutHandler } from '../src/auth.js';
-import { resetDb, seedProfessor, requestJSON } from './setup.js';
+import request from 'supertest';
+import { criarAppDeTeste, seedProfessor } from './setup.js';
 
 describe('auth', () => {
-  beforeEach(async () => {
-    await resetDb(env);
-    await seedProfessor(env, 'ademar', 'senha-correta-123');
+  let app;
+
+  beforeEach(() => {
+    app = criarAppDeTeste();
+    seedProfessor(app, 'ademar', 'senha-correta-123');
   });
 
   it('login com credenciais corretas retorna token', async () => {
-    const request = requestJSON('POST', { usuario: 'ademar', senha: 'senha-correta-123' });
-    const resp = await loginHandler({ request, env });
+    const resp = await request(app)
+      .post('/api/login')
+      .send({ usuario: 'ademar', senha: 'senha-correta-123' });
     expect(resp.status).toBe(200);
-    const dados = await resp.json();
-    expect(typeof dados.token).toBe('string');
-    expect(dados.token.length).toBeGreaterThan(10);
+    expect(typeof resp.body.token).toBe('string');
+    expect(resp.body.token.length).toBeGreaterThan(10);
   });
 
   it('login com senha incorreta retorna 401 sem bloqueio (FR-019)', async () => {
-    const request = requestJSON('POST', { usuario: 'ademar', senha: 'senha-errada' });
-    const resp = await loginHandler({ request, env });
+    const resp = await request(app)
+      .post('/api/login')
+      .send({ usuario: 'ademar', senha: 'senha-errada' });
     expect(resp.status).toBe(401);
-    const dados = await resp.json();
-    expect(dados.mensagem).toContain('incorretos');
+    expect(resp.body.mensagem).toContain('incorretos');
   });
 
   it('login com usuário inexistente retorna 401', async () => {
-    const request = requestJSON('POST', { usuario: 'ninguem', senha: 'x' });
-    const resp = await loginHandler({ request, env });
+    const resp = await request(app).post('/api/login').send({ usuario: 'ninguem', senha: 'x' });
     expect(resp.status).toBe(401);
   });
 
   it('logout limpa o token e sessões antigas deixam de ser válidas', async () => {
-    const loginResp = await loginHandler({
-      request: requestJSON('POST', { usuario: 'ademar', senha: 'senha-correta-123' }),
-      env,
-    });
-    const { token } = await loginResp.json();
+    const loginResp = await request(app)
+      .post('/api/login')
+      .send({ usuario: 'ademar', senha: 'senha-correta-123' });
+    const { token } = loginResp.body;
 
-    const logoutResp = await logoutHandler({
-      request: requestJSON('POST', undefined, { Authorization: `Bearer ${token}` }),
-      env,
-    });
+    const logoutResp = await request(app)
+      .post('/api/logout')
+      .set('Authorization', `Bearer ${token}`);
     expect(logoutResp.status).toBe(200);
 
-    const segundoLogout = await logoutHandler({
-      request: requestJSON('POST', undefined, { Authorization: `Bearer ${token}` }),
-      env,
-    });
+    const segundoLogout = await request(app)
+      .post('/api/logout')
+      .set('Authorization', `Bearer ${token}`);
     expect(segundoLogout.status).toBe(401);
   });
 });

@@ -1,119 +1,84 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { env } from 'cloudflare:test';
-import { loginHandler } from '../src/auth.js';
-import { cadastroHandler } from '../src/alunos.js';
-import {
-  habilitarTurmaHandler,
-  revogarTurmaHandler,
-  habilitarAlunoHandler,
-  verificarHabilitacaoHandler,
-} from '../src/habilitacoes.js';
-import { resetDb, seedProfessor, requestJSON } from './setup.js';
-
-async function login() {
-  const resp = await loginHandler({
-    request: requestJSON('POST', { usuario: 'ademar', senha: 'senha-correta-123' }),
-    env,
-  });
-  return (await resp.json()).token;
-}
-
-async function cadastrarAluno(matricula, turma) {
-  await cadastroHandler({
-    request: requestJSON('POST', {
-      nome: 'Aluno ' + matricula, idade: 20, matricula, turma, email: `${matricula}@unidavi.edu.br`,
-    }),
-    env,
-  });
-}
+import request from 'supertest';
+import { criarAppDeTeste, seedProfessor } from './setup.js';
 
 describe('habilitacoes', () => {
+  let app;
   let token;
 
   beforeEach(async () => {
-    await resetDb(env);
-    await seedProfessor(env, 'ademar', 'senha-correta-123');
-    token = await login();
+    app = criarAppDeTeste();
+    seedProfessor(app, 'ademar', 'senha-correta-123');
+    const resp = await request(app)
+      .post('/api/login')
+      .send({ usuario: 'ademar', senha: 'senha-correta-123' });
+    token = resp.body.token;
   });
+
+  async function cadastrarAluno(matricula, turma) {
+    await request(app).post('/api/alunos/cadastro').send({
+      nome: 'Aluno ' + matricula, idade: 20, matricula, turma, email: `${matricula}@unidavi.edu.br`,
+    });
+  }
 
   it('habilitar turma inteira libera acesso para aluno da turma (FR-007, FR-009)', async () => {
     await cadastrarAluno('2026010', 'T33F2');
 
-    const habilitar = await habilitarTurmaHandler({
-      request: requestJSON('POST', { trilha: 'arquitetura' }, { Authorization: `Bearer ${token}` }),
-      env,
-      params: { turma: 'T33F2' },
-    });
+    const habilitar = await request(app)
+      .post('/api/turmas/T33F2/habilitacoes')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ trilha: 'arquitetura' });
     expect(habilitar.status).toBe(200);
 
-    const check = await verificarHabilitacaoHandler({
-      env,
-      params: { matricula: '2026010', trilha: 'arquitetura' },
-    });
-    expect((await check.json()).habilitado).toBe(true);
+    const check = await request(app).get('/api/alunos/2026010/habilitacoes/arquitetura');
+    expect(check.body.habilitado).toBe(true);
   });
 
   it('aluno de outra turma não habilitada continua bloqueado', async () => {
     await cadastrarAluno('2026011', 'T34F2');
-    await habilitarTurmaHandler({
-      request: requestJSON('POST', { trilha: 'arquitetura' }, { Authorization: `Bearer ${token}` }),
-      env,
-      params: { turma: 'T33F2' },
-    });
+    await request(app)
+      .post('/api/turmas/T33F2/habilitacoes')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ trilha: 'arquitetura' });
 
-    const check = await verificarHabilitacaoHandler({
-      env,
-      params: { matricula: '2026011', trilha: 'arquitetura' },
-    });
-    expect((await check.json()).habilitado).toBe(false);
+    const check = await request(app).get('/api/alunos/2026011/habilitacoes/arquitetura');
+    expect(check.body.habilitado).toBe(false);
   });
 
   it('exceção individual concedida=false bloqueia aluno mesmo com turma habilitada (US2 cenário 3)', async () => {
     await cadastrarAluno('2026012', 'T33F2');
-    await habilitarTurmaHandler({
-      request: requestJSON('POST', { trilha: 'linguagens' }, { Authorization: `Bearer ${token}` }),
-      env,
-      params: { turma: 'T33F2' },
-    });
-    await habilitarAlunoHandler({
-      request: requestJSON('POST', { trilha: 'linguagens', concedida: false }, { Authorization: `Bearer ${token}` }),
-      env,
-      params: { matricula: '2026012' },
-    });
+    await request(app)
+      .post('/api/turmas/T33F2/habilitacoes')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ trilha: 'linguagens' });
+    await request(app)
+      .post('/api/alunos/2026012/habilitacoes')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ trilha: 'linguagens', concedida: false });
 
-    const check = await verificarHabilitacaoHandler({
-      env,
-      params: { matricula: '2026012', trilha: 'linguagens' },
-    });
-    expect((await check.json()).habilitado).toBe(false);
+    const check = await request(app).get('/api/alunos/2026012/habilitacoes/linguagens');
+    expect(check.body.habilitado).toBe(false);
   });
 
   it('revogar habilitação de turma remove acesso de quem não tem exceção individual', async () => {
     await cadastrarAluno('2026013', 'T33F2');
-    await habilitarTurmaHandler({
-      request: requestJSON('POST', { trilha: 'arquitetura' }, { Authorization: `Bearer ${token}` }),
-      env,
-      params: { turma: 'T33F2' },
-    });
-    await revogarTurmaHandler({
-      request: requestJSON('DELETE', undefined, { Authorization: `Bearer ${token}` }),
-      env,
-      params: { turma: 'T33F2', trilha: 'arquitetura' },
-    });
+    await request(app)
+      .post('/api/turmas/T33F2/habilitacoes')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ trilha: 'arquitetura' });
+    await request(app)
+      .delete('/api/turmas/T33F2/habilitacoes/arquitetura')
+      .set('Authorization', `Bearer ${token}`);
 
-    const check = await verificarHabilitacaoHandler({
-      env,
-      params: { matricula: '2026013', trilha: 'arquitetura' },
-    });
-    expect((await check.json()).habilitado).toBe(false);
+    const check = await request(app).get('/api/alunos/2026013/habilitacoes/arquitetura');
+    expect(check.body.habilitado).toBe(false);
   });
 
   it('habilitar turma com nome inválido é rejeitado (FR-013)', async () => {
-    const resp = await habilitarTurmaHandler({
-      request: requestJSON('POST', { trilha: 'arquitetura' }, { Authorization: `Bearer ${token}` }),
-      env,
-      params: { turma: 'T99X9' },
-    });
+    const resp = await request(app)
+      .post('/api/turmas/T99X9/habilitacoes')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ trilha: 'arquitetura' });
     expect(resp.status).toBe(400);
   });
 });

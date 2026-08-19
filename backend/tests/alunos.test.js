@@ -1,38 +1,34 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { env } from 'cloudflare:test';
-import { loginHandler } from '../src/auth.js';
-import { cadastroHandler, listarAlunosHandler } from '../src/alunos.js';
-import { resetDb, seedProfessor, requestJSON } from './setup.js';
-
-async function login() {
-  const resp = await loginHandler({
-    request: requestJSON('POST', { usuario: 'ademar', senha: 'senha-correta-123' }),
-    env,
-  });
-  return (await resp.json()).token;
-}
+import request from 'supertest';
+import { criarAppDeTeste, seedProfessor } from './setup.js';
 
 describe('alunos', () => {
-  beforeEach(async () => {
-    await resetDb(env);
-    await seedProfessor(env, 'ademar', 'senha-correta-123');
+  let app;
+
+  beforeEach(() => {
+    app = criarAppDeTeste();
+    seedProfessor(app, 'ademar', 'senha-correta-123');
   });
 
+  async function login() {
+    const resp = await request(app)
+      .post('/api/login')
+      .send({ usuario: 'ademar', senha: 'senha-correta-123' });
+    return resp.body.token;
+  }
+
   it('rejeita cadastro com e-mail fora do domínio institucional (FR-016)', async () => {
-    const request = requestJSON('POST', {
+    const resp = await request(app).post('/api/alunos/cadastro').send({
       nome: 'Aluno Teste', idade: 20, matricula: '2026001', turma: 'T33F2', email: 'aluno@gmail.com',
     });
-    const resp = await cadastroHandler({ request, env });
     expect(resp.status).toBe(400);
-    const dados = await resp.json();
-    expect(dados.mensagem).toContain('unidavi.edu.br');
+    expect(resp.body.mensagem).toContain('unidavi.edu.br');
   });
 
   it('rejeita cadastro com turma inválida (FR-013)', async () => {
-    const request = requestJSON('POST', {
+    const resp = await request(app).post('/api/alunos/cadastro').send({
       nome: 'Aluno Teste', idade: 20, matricula: '2026002', turma: 'T99X9', email: 'aluno@unidavi.edu.br',
     });
-    const resp = await cadastroHandler({ request, env });
     expect(resp.status).toBe(400);
   });
 
@@ -40,25 +36,21 @@ describe('alunos', () => {
     const dadosIniciais = {
       nome: 'Aluno Um', idade: 19, matricula: '2026003', turma: 'T33F2', email: 'aluno1@unidavi.edu.br',
     };
-    const resp1 = await cadastroHandler({ request: requestJSON('POST', dadosIniciais), env });
+    const resp1 = await request(app).post('/api/alunos/cadastro').send(dadosIniciais);
     expect(resp1.status).toBe(200);
 
     const dadosAtualizados = { ...dadosIniciais, nome: 'Aluno Um Atualizado', idade: 20 };
-    const resp2 = await cadastroHandler({ request: requestJSON('POST', dadosAtualizados), env });
+    const resp2 = await request(app).post('/api/alunos/cadastro').send(dadosAtualizados);
     expect(resp2.status).toBe(200);
 
     const token = await login();
-    const listaResp = await listarAlunosHandler({
-      request: requestJSON('GET', undefined, { Authorization: `Bearer ${token}` }),
-      env,
-    });
-    const { alunos } = await listaResp.json();
-    expect(alunos).toHaveLength(1);
-    expect(alunos[0].nome).toBe('Aluno Um Atualizado');
+    const listaResp = await request(app).get('/api/alunos').set('Authorization', `Bearer ${token}`);
+    expect(listaResp.body.alunos).toHaveLength(1);
+    expect(listaResp.body.alunos[0].nome).toBe('Aluno Um Atualizado');
   });
 
   it('GET /api/alunos exige autenticação', async () => {
-    const resp = await listarAlunosHandler({ request: requestJSON('GET'), env });
+    const resp = await request(app).get('/api/alunos');
     expect(resp.status).toBe(401);
   });
 });

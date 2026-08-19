@@ -1,79 +1,80 @@
-// Acesso ao D1. Todas as funções recebem o binding `db` (env.DB) e retornam
-// dados já no formato usado pelas rotas — nenhuma lógica HTTP aqui.
+// Acesso ao SQLite local via better-sqlite3 (síncrono, zero servidor de banco).
+// Todas as funções recebem a instância `db` já aberta e retornam dados já no
+// formato usado pelas rotas — nenhuma lógica HTTP aqui.
 
-export async function getProfessor(db) {
-  return db.prepare('SELECT * FROM professores LIMIT 1').first();
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import Database from 'better-sqlite3';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const SCHEMA_PATH = path.join(__dirname, '..', 'migrations', '0001_init.sql');
+
+// `dbPath` pode ser um caminho de arquivo ou ':memory:' (usado nos testes).
+export function abrirDb(dbPath) {
+  const db = new Database(dbPath);
+  db.pragma('journal_mode = WAL');
+  db.exec(fs.readFileSync(SCHEMA_PATH, 'utf8'));
+  return db;
 }
 
-export async function getProfessorPorUsuario(db, usuario) {
-  return db
-    .prepare('SELECT * FROM professores WHERE usuario = ?')
-    .bind(usuario)
-    .first();
+export function getProfessor(db) {
+  return db.prepare('SELECT * FROM professores LIMIT 1').get();
 }
 
-export async function getProfessorByToken(db, token) {
-  return db
-    .prepare('SELECT * FROM professores WHERE token_ativo = ?')
-    .bind(token)
-    .first();
+export function getProfessorPorUsuario(db, usuario) {
+  return db.prepare('SELECT * FROM professores WHERE usuario = ?').get(usuario);
 }
 
-export async function setProfessorToken(db, professorId, token) {
-  await db
-    .prepare('UPDATE professores SET token_ativo = ? WHERE id = ?')
-    .bind(token, professorId)
-    .run();
+export function getProfessorByToken(db, token) {
+  return db.prepare('SELECT * FROM professores WHERE token_ativo = ?').get(token);
 }
 
-export async function clearProfessorToken(db, professorId) {
-  await db
-    .prepare('UPDATE professores SET token_ativo = NULL WHERE id = ?')
-    .bind(professorId)
-    .run();
+export function setProfessorToken(db, professorId, token) {
+  db.prepare('UPDATE professores SET token_ativo = ? WHERE id = ?').run(token, professorId);
 }
 
-export async function setProfessorSenha(db, professorId, senhaHash, senhaSalt) {
-  await db
-    .prepare(
-      'UPDATE professores SET senha_hash = ?, senha_salt = ?, token_ativo = NULL WHERE id = ?'
-    )
-    .bind(senhaHash, senhaSalt, professorId)
-    .run();
+export function clearProfessorToken(db, professorId) {
+  db.prepare('UPDATE professores SET token_ativo = NULL WHERE id = ?').run(professorId);
 }
 
-export async function getAlunoByMatricula(db, matricula) {
-  return db
-    .prepare('SELECT * FROM alunos WHERE matricula = ?')
-    .bind(matricula)
-    .first();
+// Provisionamento/redefinição manual da credencial (FR-012, FR-017) — usado tanto
+// pelo script de seed local quanto pelo bootstrap via env var em server.js.
+export function upsertProfessorCredencial(db, usuario, senhaHash, senhaSalt) {
+  db.prepare(
+    `INSERT INTO professores (usuario, senha_hash, senha_salt, criado_em)
+     VALUES (?, ?, ?, datetime('now'))
+     ON CONFLICT (usuario) DO UPDATE SET
+       senha_hash = excluded.senha_hash,
+       senha_salt = excluded.senha_salt,
+       token_ativo = NULL`
+  ).run(usuario, senhaHash, senhaSalt);
 }
 
-export async function upsertAluno(db, { matricula, nome, idade, turma, email }) {
-  await db
-    .prepare(
-      `INSERT INTO alunos (matricula, nome, idade, turma, email, criado_em, atualizado_em)
-       VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-       ON CONFLICT (matricula) DO UPDATE SET
-         nome = excluded.nome,
-         idade = excluded.idade,
-         turma = excluded.turma,
-         email = excluded.email,
-         atualizado_em = datetime('now')`
-    )
-    .bind(matricula, nome, idade, turma, email)
-    .run();
+export function getAlunoByMatricula(db, matricula) {
+  return db.prepare('SELECT * FROM alunos WHERE matricula = ?').get(matricula);
+}
+
+export function upsertAluno(db, { matricula, nome, idade, turma, email }) {
+  db.prepare(
+    `INSERT INTO alunos (matricula, nome, idade, turma, email, criado_em, atualizado_em)
+     VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+     ON CONFLICT (matricula) DO UPDATE SET
+       nome = excluded.nome,
+       idade = excluded.idade,
+       turma = excluded.turma,
+       email = excluded.email,
+       atualizado_em = datetime('now')`
+  ).run(matricula, nome, idade, turma, email);
   return getAlunoByMatricula(db, matricula);
 }
 
-export async function listAlunosComHabilitacoes(db) {
-  const { results: alunos } = await db
-    .prepare('SELECT * FROM alunos ORDER BY turma, nome')
-    .all();
-  const { results: habilitacoes } = await db
+export function listAlunosComHabilitacoes(db) {
+  const alunos = db.prepare('SELECT * FROM alunos ORDER BY turma, nome').all();
+  const habilitacoesIndividuais = db
     .prepare("SELECT * FROM habilitacoes WHERE escopo = 'individual'")
     .all();
-  const { results: habilitacoesTurma } = await db
+  const habilitacoesTurma = db
     .prepare("SELECT * FROM habilitacoes WHERE escopo = 'turma'")
     .all();
 
@@ -84,7 +85,7 @@ export async function listAlunosComHabilitacoes(db) {
         aluno,
         trilha,
         habilitacoesTurma,
-        habilitacoesIndividuais: habilitacoes,
+        habilitacoesIndividuais,
       });
     }
     return {
@@ -97,48 +98,36 @@ export async function listAlunosComHabilitacoes(db) {
   });
 }
 
-export async function upsertHabilitacaoTurma(db, turma, trilha, concedida) {
-  await db
-    .prepare(
-      `INSERT INTO habilitacoes (escopo, turma, trilha, concedida, atualizado_em)
-       VALUES ('turma', ?, ?, ?, datetime('now'))
-       ON CONFLICT (turma, trilha) WHERE escopo = 'turma' DO UPDATE SET
-         concedida = excluded.concedida,
-         atualizado_em = datetime('now')`
-    )
-    .bind(turma, trilha, concedida ? 1 : 0)
-    .run();
+export function upsertHabilitacaoTurma(db, turma, trilha, concedida) {
+  db.prepare(
+    `INSERT INTO habilitacoes (escopo, turma, trilha, concedida, atualizado_em)
+     VALUES ('turma', ?, ?, ?, datetime('now'))
+     ON CONFLICT (turma, trilha) WHERE escopo = 'turma' DO UPDATE SET
+       concedida = excluded.concedida,
+       atualizado_em = datetime('now')`
+  ).run(turma, trilha, concedida ? 1 : 0);
 }
 
-export async function deleteHabilitacaoTurma(db, turma, trilha) {
-  await db
-    .prepare(
-      "DELETE FROM habilitacoes WHERE escopo = 'turma' AND turma = ? AND trilha = ?"
-    )
-    .bind(turma, trilha)
-    .run();
+export function deleteHabilitacaoTurma(db, turma, trilha) {
+  db.prepare(
+    "DELETE FROM habilitacoes WHERE escopo = 'turma' AND turma = ? AND trilha = ?"
+  ).run(turma, trilha);
 }
 
-export async function upsertHabilitacaoIndividual(db, alunoId, trilha, concedida) {
-  await db
-    .prepare(
-      `INSERT INTO habilitacoes (escopo, aluno_id, trilha, concedida, atualizado_em)
-       VALUES ('individual', ?, ?, ?, datetime('now'))
-       ON CONFLICT (aluno_id, trilha) WHERE escopo = 'individual' DO UPDATE SET
-         concedida = excluded.concedida,
-         atualizado_em = datetime('now')`
-    )
-    .bind(alunoId, trilha, concedida ? 1 : 0)
-    .run();
+export function upsertHabilitacaoIndividual(db, alunoId, trilha, concedida) {
+  db.prepare(
+    `INSERT INTO habilitacoes (escopo, aluno_id, trilha, concedida, atualizado_em)
+     VALUES ('individual', ?, ?, ?, datetime('now'))
+     ON CONFLICT (aluno_id, trilha) WHERE escopo = 'individual' DO UPDATE SET
+       concedida = excluded.concedida,
+       atualizado_em = datetime('now')`
+  ).run(alunoId, trilha, concedida ? 1 : 0);
 }
 
-export async function deleteHabilitacaoIndividual(db, alunoId, trilha) {
-  await db
-    .prepare(
-      "DELETE FROM habilitacoes WHERE escopo = 'individual' AND aluno_id = ? AND trilha = ?"
-    )
-    .bind(alunoId, trilha)
-    .run();
+export function deleteHabilitacaoIndividual(db, alunoId, trilha) {
+  db.prepare(
+    "DELETE FROM habilitacoes WHERE escopo = 'individual' AND aluno_id = ? AND trilha = ?"
+  ).run(alunoId, trilha);
 }
 
 // Regra de resolução de acesso (data-model.md): exceção individual concedida=true
@@ -156,23 +145,21 @@ function resolverHabilitacao({ aluno, trilha, habilitacoesTurma, habilitacoesInd
   return daTurma ? daTurma.concedida === 1 : false;
 }
 
-export async function getHabilitacaoResolvida(db, matricula, trilha) {
-  const aluno = await getAlunoByMatricula(db, matricula);
+export function getHabilitacaoResolvida(db, matricula, trilha) {
+  const aluno = getAlunoByMatricula(db, matricula);
   if (!aluno) return false;
 
-  const excecao = await db
+  const excecao = db
     .prepare(
       "SELECT concedida FROM habilitacoes WHERE escopo = 'individual' AND aluno_id = ? AND trilha = ?"
     )
-    .bind(aluno.id, trilha)
-    .first();
+    .get(aluno.id, trilha);
   if (excecao) return excecao.concedida === 1;
 
-  const daTurma = await db
+  const daTurma = db
     .prepare(
       "SELECT concedida FROM habilitacoes WHERE escopo = 'turma' AND turma = ? AND trilha = ?"
     )
-    .bind(aluno.turma, trilha)
-    .first();
+    .get(aluno.turma, trilha);
   return daTurma ? daTurma.concedida === 1 : false;
 }
