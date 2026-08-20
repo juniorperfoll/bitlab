@@ -159,7 +159,8 @@ input[type=text]:hover,input[type=password]:hover,input[type=email]:hover{border
   border:1px solid var(--solder);border-radius:10px;background:var(--board);
   overflow:hidden;line-height:0;
 }
-#mapaCanvas{width:100%;height:auto;display:block;cursor:pointer;touch-action:manipulation}
+#mapaCanvas,#salaCanvas{width:100%;height:auto;display:block;cursor:pointer;touch-action:manipulation}
+#salaCanvas{image-rendering:pixelated}
 .mapaInfo{
   border:1px solid var(--solder);border-top:none;border-radius:0 0 10px 10px;
   background:var(--board2);padding:12px 15px;margin-top:-1px;
@@ -170,6 +171,14 @@ input[type=text]:hover,input[type=password]:hover,input[type=email]:hover{border
 .mapaLegenda{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11px;color:var(--dim)}
 .mapaLegenda span{display:inline-flex;align-items:center;gap:6px}
 .mapaLegenda i{width:10px;height:10px;border-radius:50%;display:inline-block}
+
+/* ---------- sala 2D — painel de missão em overlay (feature 008) ---------- */
+.missao-backdrop{position:fixed;inset:0;background:rgba(8,10,16,.82);z-index:39}
+#telaJogo.overlay-ativo,#telaFase.overlay-ativo{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  z-index:40;width:min(640px,92vw);max-height:88vh;overflow:auto;margin:0;
+  box-shadow:0 12px 40px rgba(0,0,0,.5);
+}
 .mapaInfo .desc{font-size:12px;color:var(--dim);line-height:1.4}
 .mapaInfo .estrelas{margin-top:6px;color:var(--copper);font-size:13px;letter-spacing:2px}
 .mapaInfo .dica{margin-top:8px;font-size:11px;color:var(--dim)}
@@ -551,16 +560,25 @@ pre.relatorio{
   <div class="card hidden" id="telaTrilha">
     <h3 class="sub">SUA TRILHA</h3>
     <p class="lead" id="trilhaMsg" style="margin-bottom:14px"></p>
-    <div class="mapaWrap">
+    <div class="mapaWrap" id="mapaWrap">
       <canvas id="mapaCanvas" width="960" height="380"></canvas>
     </div>
+    <div class="mapaWrap hidden" id="salaWrap">
+      <canvas id="salaCanvas" width="960" height="380"></canvas>
+    </div>
     <div class="mapaInfo" id="mapaInfo"></div>
+    <div class="mapaInfo hidden" id="salaInfo"></div>
     <div class="mapaLegenda" id="mapaLegenda"></div>
-    <p class="foot" style="text-align:left;margin-top:14px">
+    <p class="foot" id="mapaAjuda" style="text-align:left;margin-top:14px">
       ⌨️ Use as setas (ou A/D) para andar até a próxima estação · ENTER para entrar ·
       em telas de toque, toque num nó do mapa.
     </p>
+    <p class="foot hidden" id="salaAjuda" style="text-align:left;margin-top:14px">
+      ⌨️ Use as setas ou WASD para andar pela sala · ESPAÇO ou ENTER perto de um objeto (❗) para responder.
+    </p>
   </div>
+
+  <div class="missao-backdrop hidden" id="missaoBackdrop"></div>
 
   <!-- TELA: JOGO -->
   <div class="card hidden" id="telaJogo">
@@ -618,7 +636,8 @@ pre.relatorio{
   <p class="foot">
     BIT LAB · material didático de apoio — Arquitetura de Computadores, Bacharelado em Sistemas de Informação, UNIDAVI.<br>
     Conteúdo baseado nos slides das Aulas 02 e 03 (Sistemas de Numeração; Números Negativos, Ponto Flutuante e Codificação de Caracteres).<br>
-    Referência: STALLINGS, W. <i>Arquitetura e organização de computadores</i>. 10. ed. São Paulo: Pearson, 2017. Cap. 9 e 10.
+    Referência: STALLINGS, W. <i>Arquitetura e organização de computadores</i>. 10. ed. São Paulo: Pearson, 2017. Cap. 9 e 10.<br>
+    Arte: Modern Interiors por LimeZu — <a href="https://limezu.itch.io/moderninteriors" target="_blank" rel="noopener" style="color:inherit">limezu.itch.io/moderninteriors</a>.
   </p>
 </div>
 
@@ -2423,10 +2442,22 @@ function atualizarStatus(){
   $('stPre').textContent = S.total ? Math.round(100*S.acertos/S.total)+'%' : '—';
   $('stNivel').textContent = nivelAtual();
 }
-function mostrar(tela){
-  ['telaInicio','telaTrocarSenha','telaTrilha','telaJogo','telaFase','telaCert'].forEach(t => $(t).classList.toggle('hidden', t!==tela));
+function mostrar(tela, overlay){
+  const overlayValido = !!overlay && (tela==='telaJogo' || tela==='telaFase');
+  if(overlayValido){
+    ['telaJogo','telaFase'].forEach(t => {
+      $(t).classList.toggle('hidden', t!==tela);
+      $(t).classList.toggle('overlay-ativo', t===tela);
+    });
+  } else {
+    ['telaInicio','telaTrocarSenha','telaTrilha','telaJogo','telaFase','telaCert'].forEach(t => {
+      $(t).classList.toggle('hidden', t!==tela);
+      $(t).classList.remove('overlay-ativo');
+    });
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  $('missaoBackdrop').classList.toggle('hidden', !overlayValido);
   $('bus').classList.toggle('hidden', tela!=='telaJogo');
-  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 /* =======================================================================
@@ -2539,6 +2570,7 @@ function atualizarInfoMapa(){
 
 function desenharMapa(){
   const canvas = $('mapaCanvas'), ctx = canvas.getContext('2d');
+  if(!ctx) return; // ambiente sem Canvas 2D real (ex.: jsdom no teste headless) — estado continua válido
   const W = canvas.width, H = canvas.height;
   ctx.clearRect(0,0,W,H);
   ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--board').trim();
@@ -2609,13 +2641,6 @@ function loopMapa(ts){
   requestAnimationFrame(loopMapa);
 }
 
-function renderTrilha(){
-  construirMapa();
-  atualizarInfoMapa();
-  desenharMapa();
-  if(!loopMapaAtivo){ loopMapaAtivo = true; requestAnimationFrame(loopMapa); }
-}
-
 (function configurarMapa(){
   const canvas = $('mapaCanvas');
   function coordCanvas(clientX, clientY){
@@ -2642,26 +2667,368 @@ function renderTrilha(){
 })();
 
 /* =======================================================================
+   TRILHA — sala 2D da estação 1 (User Story 1, feature 008)
+   O aluno anda livremente em grade dentro da sala, colide com paredes,
+   interage com o terminal (missão em overlay) e destranca a porta ao
+   concluir — reaproveita iniciarFase()/fimFase() sem alterá-las.
+   Ver specs/008-mapa-salas-2d/. As demais estações continuam no mapa de
+   waypoints acima até a User Story 2 (replicação) ser aprovada.
+   ======================================================================= */
+const SALA_COLS = 12, SALA_LINHAS = 8;
+let sala = null;
+let salaAtiva = false;
+let loopSalaAtivo = false;
+
+function paredesPadraoSala(){
+  const paredes = new Set();
+  for(let x=0;x<SALA_COLS;x++){ paredes.add(x+',0'); paredes.add(x+','+(SALA_LINHAS-1)); }
+  for(let y=0;y<SALA_LINHAS;y++){ paredes.add('0,'+y); paredes.add((SALA_COLS-1)+','+y); }
+  return paredes;
+}
+
+function celulasLivresSala(porta, jogadorInicial){
+  const livres = [];
+  for(let y=1;y<SALA_LINHAS-1;y++){
+    for(let x=1;x<SALA_COLS-1;x++){
+      if(x===porta.x && y===porta.y) continue;
+      if(x===jogadorInicial.x && y===jogadorInicial.y) continue;
+      livres.push({x,y});
+    }
+  }
+  return livres;
+}
+
+function poolCompletoDaTrilha(trilha){
+  let pool = [];
+  trilha.stages.filter(x=>!x.boss).forEach(x => pool = pool.concat(x.pool));
+  return pool;
+}
+
+function geradoresDaSala(stage, trilha){
+  if(stage.boss) return shuffle(poolCompletoDaTrilha(trilha)).slice(0,PERGUNTAS_BOSS);
+  return stage.pool;
+}
+
+const SALA_TEMAS = [
+  { piso:'piso.png', parede:'parede.png', corParedeFallback:'#9E1B32' },
+  { piso:'piso2.png', parede:'parede2.png', corParedeFallback:'#5B3A29' },
+  { piso:'piso3.png', parede:'parede3.png', corParedeFallback:'#8a3a2e' },
+  { piso:'piso.png', parede:'parede4.png', corParedeFallback:'#4a4a5e' },
+  { piso:'piso2.png', parede:'parede.png', corParedeFallback:'#2E6B4A' }
+];
+
+function construirSala(stage){
+  const trilha = TRAILS[S.trilhaId];
+  const porta = { x: SALA_COLS-1, y: Math.floor(SALA_LINHAS/2) };
+  const jogadorInicial = { x: 2, y: Math.floor(SALA_LINHAS/2) };
+  const livres = celulasLivresSala(porta, jogadorInicial);
+  const jaFeito = !!(S.estagios[stage.id] && S.estagios[stage.id].feito);
+  const geradores = geradoresDaSala(stage, trilha);
+  const n = geradores.length;
+  const objetos = [];
+  for(let i=0;i<n;i++){
+    const pos = livres[Math.round(i*(livres.length-1)/Math.max(1,n-1))];
+    objetos.push({ idx:i, x:pos.x, y:pos.y, resolvido: jaFeito });
+  }
+  const indiceEstacao = trilha.stages.findIndex(s=>s.id===stage.id);
+  sala = {
+    stage,
+    paredes: paredesPadraoSala(),
+    porta,
+    objetos,
+    geradores,
+    tema: SALA_TEMAS[Math.max(0,indiceEstacao) % SALA_TEMAS.length],
+    jogador: { x: jogadorInicial.x, y: jogadorInicial.y },
+    trancada: !jaFeito,
+    missaoAberta: false,
+    objetoAtual: null,
+    pulso: 0
+  };
+}
+
+function mostrarSala(stage){
+  if(!sala || sala.stage.id!==stage.id) construirSala(stage);
+  sala.trancada = !S.estagios[stage.id].feito;
+  sala.missaoAberta = false;
+  salaAtiva = true;
+  $('mapaWrap').classList.add('hidden');
+  $('mapaInfo').classList.add('hidden');
+  $('mapaLegenda').classList.add('hidden');
+  $('mapaAjuda').classList.add('hidden');
+  $('salaWrap').classList.remove('hidden');
+  $('salaInfo').classList.remove('hidden');
+  $('salaAjuda').classList.remove('hidden');
+  atualizarInfoSala();
+  desenharSala();
+  if(!loopSalaAtivo){ loopSalaAtivo = true; requestAnimationFrame(loopSala); }
+}
+
+function esconderSala(){
+  salaAtiva = false;
+  $('salaWrap').classList.add('hidden');
+  $('salaInfo').classList.add('hidden');
+  $('salaAjuda').classList.add('hidden');
+  $('mapaWrap').classList.remove('hidden');
+  $('mapaInfo').classList.remove('hidden');
+  $('mapaLegenda').classList.remove('hidden');
+  $('mapaAjuda').classList.remove('hidden');
+}
+
+function mostrarMapaWaypoints(){
+  esconderSala();
+  construirMapa();
+  atualizarInfoMapa();
+  desenharMapa();
+  if(!loopMapaAtivo){ loopMapaAtivo = true; requestAnimationFrame(loopMapa); }
+}
+
+function proximaEstacaoDaTrilha(stage){
+  const trilha = TRAILS[S.trilhaId];
+  const idx = trilha.stages.findIndex(s=>s.id===stage.id);
+  return trilha.stages[idx+1] || null;
+}
+
+function sairDaSalaAtual(){
+  const proxima = proximaEstacaoDaTrilha(sala.stage);
+  if(proxima) mostrarSala(proxima);
+  // se não há próxima (era o boss), fimFase() já disparou telaCertificacao()
+  // ao resolver o último objeto — nada mais a fazer aqui.
+}
+
+function renderTrilha(){
+  const trilha = TRAILS[S.trilhaId];
+  const pendente = trilha.stages.find(st => !S.estagios[st.id].feito);
+  mostrarSala(pendente || trilha.stages[trilha.stages.length-1]);
+}
+
+function atualizarInfoSala(){
+  const f = sala.stage;
+  const pendentes = sala.objetos.filter(o=>!o.resolvido).length;
+  const dica = sala.trancada
+    ? pendentes+' de '+sala.objetos.length+' objetos pendentes (❗) — interaja com todos para destravar a porta.'
+    : 'Missão concluída — ande até a porta para seguir em frente.';
+  $('salaInfo').innerHTML =
+    '<span class="num">ESTAÇÃO '+f.num+'</span>'+
+    '<div class="nome">'+f.nome+'</div>'+
+    '<div class="desc">'+f.desc+'</div>'+
+    '<div class="dica">'+dica+'</div>';
+  $('salaInfo').dataset.original = $('salaInfo').innerHTML;
+}
+
+function distManhattanSala(a,b){ return Math.abs(a.x-b.x)+Math.abs(a.y-b.y); }
+
+function moverJogadorSala(dx,dy){
+  if(!sala || sala.missaoAberta) return;
+  const nx = sala.jogador.x+dx, ny = sala.jogador.y+dy;
+  if(nx===sala.porta.x && ny===sala.porta.y){
+    if(sala.trancada){ mostrarAvisoSala('🔒 Complete a missão para destravar a porta.'); return; }
+    sairDaSalaAtual();
+    return;
+  }
+  if(sala.paredes.has(nx+','+ny)) return;
+  sala.jogador.x = nx; sala.jogador.y = ny;
+}
+
+function tentarInteragirSala(){
+  if(!sala || sala.missaoAberta) return;
+  const alvo = sala.objetos.find(o => !o.resolvido && distManhattanSala(sala.jogador, o) <= 1);
+  if(!alvo){
+    mostrarAvisoSala('Aproxime-se de um objeto pendente (❗) para interagir.');
+    return;
+  }
+  sala.missaoAberta = true;
+  iniciarFase(sala.stage.id, alvo.idx);
+}
+
+let avisoSalaTimeout = null;
+function mostrarAvisoSala(txt){
+  const info = $('salaInfo');
+  const original = info.dataset.original || info.innerHTML;
+  info.dataset.original = original;
+  info.innerHTML = '<div class="dica" style="color:var(--err)">'+txt+'</div>';
+  clearTimeout(avisoSalaTimeout);
+  avisoSalaTimeout = setTimeout(()=>{ info.innerHTML = info.dataset.original; }, 2200);
+}
+
+function desenharSalaFormas(){
+  const canvas = $('salaCanvas'), ctx = canvas.getContext('2d');
+  if(!ctx) return; // ambiente sem Canvas 2D real (ex.: jsdom no teste headless) — estado continua válido
+  const W = canvas.width, H = canvas.height;
+  const cw = W/SALA_COLS, ch = H/SALA_LINHAS;
+  const cor = getComputedStyle(document.documentElement);
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = cor.getPropertyValue('--board').trim();
+  ctx.fillRect(0,0,W,H);
+
+  ctx.strokeStyle = 'rgba(44,53,80,.5)'; ctx.lineWidth = 1;
+  for(let x=0;x<=SALA_COLS;x++){ ctx.beginPath(); ctx.moveTo(x*cw,0); ctx.lineTo(x*cw,H); ctx.stroke(); }
+  for(let y=0;y<=SALA_LINHAS;y++){ ctx.beginPath(); ctx.moveTo(0,y*ch); ctx.lineTo(W,y*ch); ctx.stroke(); }
+
+  sala.paredes.forEach(chave=>{
+    const [x,y] = chave.split(',').map(Number);
+    ctx.fillStyle = sala.tema.corParedeFallback;
+    ctx.fillRect(x*cw+1, y*ch+1, cw-2, ch-2);
+  });
+
+  const pd = sala.porta;
+  ctx.fillStyle = sala.trancada ? '#3a2230' : '#4FE0B0';
+  ctx.fillRect(pd.x*cw+1, pd.y*ch+1, cw-2, ch-2);
+  ctx.fillStyle = '#10131c';
+  ctx.font = '700 16px "JetBrains Mono",monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(sala.trancada?'🔒':'▸', pd.x*cw+cw/2, pd.y*ch+ch/2);
+
+  const pr = 0.5+0.5*Math.sin(sala.pulso/260);
+  sala.objetos.forEach(o=>{
+    ctx.fillStyle = o.resolvido ? '#33403a' : sala.stage.cor;
+    ctx.fillRect(o.x*cw+cw*0.2, o.y*ch+ch*0.2, cw*0.6, ch*0.6);
+    ctx.strokeStyle = o.resolvido ? 'rgba(79,224,176,.45)' : 'rgba(232,163,61,'+(0.5+pr*0.3)+')';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(o.x*cw+cw*0.15, o.y*ch+ch*0.15, cw*0.7, ch*0.7);
+  });
+
+  const jg = sala.jogador;
+  const bob = REDUZIR_MOVIMENTO ? 0 : Math.sin(sala.pulso/180)*2;
+  ctx.beginPath();
+  ctx.arc(jg.x*cw+cw/2, jg.y*ch+ch/2+bob, Math.min(cw,ch)*0.32, 0, Math.PI*2);
+  ctx.fillStyle = '#4FE0B0'; ctx.fill();
+  ctx.strokeStyle = '#0c3'; ctx.lineWidth = 1.5; ctx.stroke();
+}
+
+/* ---------------- arte pixel — Modern Interiors, versão gratuita (feature 009) ----------------
+   Crédito: pacote "Modern Interiors" por LimeZu (limezu.itch.io/moderninteriors).
+   Ver backend/public/assets/moderninteriors/LEIA-ME.md para o contrato de arquivos.
+   Enquanto os arquivos não existirem, desenharSala() cai de volta para
+   desenharSalaFormas() (fallback gracioso, FR-004) — nada aqui é obrigatório.
+   Chaves = nome de arquivo, pra suportar as variantes de tema por estação
+   (feature 012, SALA_TEMAS) sem precisar de um manifesto por tema. */
+const SALA_ASSETS_DIR = 'assets/moderninteriors/';
+const SALA_ASSET_ARQUIVOS = [
+  'piso.png','piso2.png','piso3.png',
+  'parede.png','parede2.png','parede3.png','parede4.png',
+  'terminal.png','personagem.png'
+];
+let salaImagens = {};
+let salaSpritesProntos = false;
+
+function carregarSpritesSala(){
+  let restantes = SALA_ASSET_ARQUIVOS.length, falhou = false;
+  SALA_ASSET_ARQUIVOS.forEach(arquivo=>{
+    const img = new Image();
+    img.onload = () => {
+      restantes--;
+      if(restantes===0 && !falhou) salaSpritesProntos = true;
+    };
+    img.onerror = () => {
+      falhou = true; restantes--;
+      console.warn('[sala2d] sprite ausente: '+SALA_ASSETS_DIR+arquivo+' — usando desenho geométrico (fallback).');
+    };
+    img.src = SALA_ASSETS_DIR+arquivo;
+    salaImagens[arquivo] = img;
+  });
+}
+carregarSpritesSala();
+
+function desenharSalaComSprites(){
+  const canvas = $('salaCanvas'), ctx = canvas.getContext('2d');
+  if(!ctx) return;
+  const W = canvas.width, H = canvas.height;
+  const cw = W/SALA_COLS, ch = H/SALA_LINHAS;
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0,0,W,H);
+
+  for(let x=0;x<SALA_COLS;x++){
+    for(let y=0;y<SALA_LINHAS;y++){
+      const ehParede = sala.paredes.has(x+','+y);
+      const img = ehParede ? salaImagens[sala.tema.parede] : salaImagens[sala.tema.piso];
+      ctx.drawImage(img, x*cw, y*ch, cw, ch);
+    }
+  }
+
+  const pd = sala.porta;
+  ctx.fillStyle = sala.trancada ? '#3a2230' : '#4FE0B0';
+  ctx.fillRect(pd.x*cw+1, pd.y*ch+1, cw-2, ch-2);
+  ctx.fillStyle = '#10131c';
+  ctx.font = '700 16px "JetBrains Mono",monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(sala.trancada?'🔒':'▸', pd.x*cw+cw/2, pd.y*ch+ch/2);
+
+  // terminal é sprite 16x32 (o dobro da altura da célula) — desenhado "de
+  // pé", com os pés na base da própria célula; reaproveitado pra todo
+  // objeto interativo (feature 010) — variedade visual é polimento futuro
+  sala.objetos.forEach(o=>{
+    ctx.globalAlpha = o.resolvido ? 0.55 : 1;
+    ctx.drawImage(salaImagens['terminal.png'], o.x*cw, o.y*ch-ch, cw, ch*2);
+    ctx.globalAlpha = 1;
+  });
+
+  const jg = sala.jogador;
+  const bob = REDUZIR_MOVIMENTO ? 0 : Math.sin(sala.pulso/180)*2;
+  ctx.drawImage(salaImagens['personagem.png'], jg.x*cw, jg.y*ch-ch+bob, cw, ch*2);
+}
+
+function desenharIndicadoresSala(){
+  const canvas = $('salaCanvas'), ctx = canvas.getContext('2d');
+  if(!ctx || !sala) return;
+  const W = canvas.width, H = canvas.height;
+  const cw = W/SALA_COLS, ch = H/SALA_LINHAS;
+  ctx.font = '700 16px "JetBrains Mono",monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  sala.objetos.forEach(o=>{
+    if(o.resolvido) return;
+    ctx.fillText('❗', o.x*cw+cw/2, o.y*ch-ch*0.35);
+  });
+}
+
+function desenharSala(){
+  if(salaSpritesProntos) desenharSalaComSprites();
+  else desenharSalaFormas();
+  desenharIndicadoresSala();
+}
+
+function loopSala(ts){
+  if($('telaTrilha').classList.contains('hidden') || !sala || !salaAtiva){ loopSalaAtivo = false; return; }
+  sala.pulso += 16;
+  desenharSala();
+  requestAnimationFrame(loopSala);
+}
+
+/* Ponte de depuração só para o teste headless (backend/tests/sala2d.test.js) */
+window.__salaDebug = {
+  get S(){ return S; },
+  get sala(){ return sala; },
+  get TRAILS(){ return TRAILS; },
+  mover: moverJogadorSala,
+  interagir: tentarInteragirSala
+};
+
+/* =======================================================================
    ESTAÇÃO / PERGUNTAS
    ======================================================================= */
-function iniciarFase(id){
+function iniciarFase(id, objetoIdx){
   const stages = TRAILS[S.trilhaId].stages;
   const f = stages.find(x=>x.id===id);
   S.estagioAtual = f;
   S.qi = 0; S.faseAcertos = 0; S.faseXp = 0;
-  if(f.boss){
-    let pool = [];
-    stages.filter(x=>!x.boss).forEach(x => pool = pool.concat(x.pool));
-    S.fila = shuffle(pool).slice(0,PERGUNTAS_BOSS).map(g=>g());
+  if(objetoIdx!=null && sala){
+    sala.objetoAtual = sala.objetos[objetoIdx];
+    S.fila = [ sala.geradores[objetoIdx]() ];
   }else{
-    S.fila = f.pool.map(g=>g());
+    if(sala) sala.objetoAtual = null;
+    if(f.boss){
+      let pool = [];
+      stages.filter(x=>!x.boss).forEach(x => pool = pool.concat(x.pool));
+      S.fila = shuffle(pool).slice(0,PERGUNTAS_BOSS).map(g=>g());
+    }else{
+      S.fila = f.pool.map(g=>g());
+    }
   }
   $('jgFase').textContent = (f.boss?'FINAL — ':'ESTAÇÃO '+f.num+' — ')+f.nome.toUpperCase();
-  mostrar('telaJogo');
+  mostrar('telaJogo', salaAtiva);
   renderPergunta();
 }
 
-let avaliar = null, respondida = false;
+let avaliar = null, respondida = false, ultimaRespostaCorreta = false;
 
 function renderPergunta(){
   respondida = false;
@@ -2769,6 +3136,7 @@ function acaoPrincipal(){
 function resolver(ok){
   if(respondida) return;
   respondida = true;
+  ultimaRespostaCorreta = ok;
   const q = S.fila[S.qi];
   const boss = S.estagioAtual.boss;
   const mult = boss ? 2 : 1;
@@ -2793,16 +3161,47 @@ function resolver(ok){
     '<div class="t">'+(ok ? 'CORRETO — +'+nf(ganho)+' pts' : 'AINDA NÃO')+'</div>'+
     '<div class="exp">'+(ok ? '' : '<b>Resposta correta:</b> <span class="mono">'+(q.resp||'')+'</span><br>')+q.exp+'</div>';
   fb.classList.remove('hidden');
-  $('btVerificar').textContent = (S.qi+1 < S.fila.length) ? 'Próxima pergunta' : 'Concluir estação';
+  $('btVerificar').textContent = (sala && sala.objetoAtual)
+    ? (ok ? 'Continuar' : 'Tentar de novo')
+    : ((S.qi+1 < S.fila.length) ? 'Próxima pergunta' : 'Concluir estação');
   $('btDica').disabled = true;
   $('jgProg').style.width = (100*(S.qi+1)/S.fila.length)+'%';
   fb.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
+function fimObjetoSala(){
+  const obj = sala.objetoAtual;
+  obj.resolvido = true;
+  sala.objetoAtual = null;
+  sala.missaoAberta = false;
+  const restam = sala.objetos.some(o => !o.resolvido);
+  if(!restam){
+    const st = S.estagios[sala.stage.id];
+    S.faseAcertos = st.acertos;
+    S.faseXp = st.xp;
+    S.fila = new Array(st.total);
+    fimFase();
+  }else{
+    mostrar('telaTrilha');
+    atualizarInfoSala();
+  }
+}
+
+function tentarDeNovoObjetoSala(){
+  const obj = sala.objetoAtual;
+  S.qi = 0;
+  S.fila = [ sala.geradores[obj.idx]() ];
+  renderPergunta();
+}
+
 function proxima(){
   S.qi++;
-  if(S.qi >= S.fila.length) fimFase();
-  else renderPergunta();
+  if(S.qi >= S.fila.length){
+    if(sala && sala.objetoAtual){
+      if(ultimaRespostaCorreta) fimObjetoSala();
+      else tentarDeNovoObjetoSala();
+    }else fimFase();
+  }else renderPergunta();
 }
 
 function fimFase(){
@@ -2819,7 +3218,8 @@ function fimFase(){
   $('fzRank').innerHTML = f.boss ? '' : 'Nível atualizado: <b>'+TRAILS[S.trilhaId].ranks[nivelAtual()]+'</b>';
   $('fzAc').textContent = acertos+'/'+total;
   $('fzPt').textContent = nf(S.faseXp);
-  mostrar('telaFase');
+  if(sala && sala.stage.id===f.id) sala.trancada = false;
+  mostrar('telaFase', salaAtiva);
   if(f.boss){ setTimeout(()=>telaCertificacao(), 600); }
 }
 
@@ -3093,6 +3493,14 @@ document.addEventListener('keydown', e=>{
     if(['ArrowLeft','ArrowUp','KeyA','KeyW'].includes(e.code)){ e.preventDefault(); iniciarAndarPara(alvo-1); }
     else if(['ArrowRight','ArrowDown','KeyD','KeyS'].includes(e.code)){ e.preventDefault(); iniciarAndarPara(alvo+1); }
     else if(e.code==='Enter' || e.code==='Space'){ e.preventDefault(); if(mapa.movendoPara===null) tentarEntrar(); }
+  }
+  if(sala && salaAtiva && !sala.missaoAberta && !$('telaTrilha').classList.contains('hidden')){
+    if(document.activeElement && document.activeElement.tagName==='INPUT') return;
+    if(['ArrowUp','KeyW'].includes(e.code)){ e.preventDefault(); moverJogadorSala(0,-1); }
+    else if(['ArrowDown','KeyS'].includes(e.code)){ e.preventDefault(); moverJogadorSala(0,1); }
+    else if(['ArrowLeft','KeyA'].includes(e.code)){ e.preventDefault(); moverJogadorSala(-1,0); }
+    else if(['ArrowRight','KeyD'].includes(e.code)){ e.preventDefault(); moverJogadorSala(1,0); }
+    else if(e.code==='Space' || e.code==='Enter'){ e.preventDefault(); tentarInteragirSala(); }
   }
 });
 

@@ -75,3 +75,6 @@ depois de um redeploy. Detalhes e passo a passo de implantação em
 Referência bibliográfica usada no conteúdo de Arquitetura de Computadores:
 STALLINGS, W. *Arquitetura e organização de computadores*. 10. ed. São Paulo:
 Pearson, 2017. Cap. 9 e 10.
+
+Arte pixel da sala 2D: pacote **Modern Interiors** (versão gratuita) por
+**LimeZu** — [limezu.itch.io/moderninteriors](https://limezu.itch.io/moderninteriors).

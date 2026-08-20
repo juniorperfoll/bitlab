@@ -10,6 +10,10 @@ backend/*.log
 .env
 .env.*
 
+# Pacote de arte original (não redistribuir o .zip em si — só os recortes
+# aplicados em backend/public/assets/moderninteriors/, permitido pela licença)
+Modern_Interiors_Free_v2.2.zip
+
 # OS/editor cruft
 .DS_Store
 Thumbs.db
