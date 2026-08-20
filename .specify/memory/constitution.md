@@ -1,19 +1,24 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 2.0.0 → 2.1.0
+Version change: 2.1.0 → 3.0.0
 Modified principles:
-  - II. Front-end Simples com Backend Mínimo e Justificado (expansão material, não
-    redefinição incompatível: o escopo de autenticação passa de "autenticar o
-    professor administrador" para "autenticar o professor administrador e, quando
-    aplicável, alunos", motivado pela feature "Importação de Alunos com Senha Padrão
-    de Primeiro Acesso", specs/002-importar-alunos-acesso/spec.md e plan.md)
-Added sections: none (seções existentes atualizadas, nenhuma nova adicionada)
+  - IV. Aprendizagem sem Bloqueio (Erro é Feedback) → IV. Validação por Acerto com
+    Retentativa Sempre Disponível (REDEFINIÇÃO INCOMPATÍVEL — reverte a garantia
+    anterior de que "erro NUNCA pode travar ou impedir o progresso na trilha".
+    Agora uma estação/objeto interativo só é considerado validado quando respondido
+    CORRETAMENTE; enquanto errado, permanece pendente e pode impedir o avanço.
+    Motivado pelo pedido explícito do usuário — "enquanto uma estação não for
+    resolvida corretamente ela não será validada, ficando pendente para resolução"
+    — confirmado após alertar sobre o conflito com a redação anterior do princípio.
+    A garantia de retentativa ilimitada, imediata e sem penalidade adicional é
+    mantida e explicitada, assim como a proibição de "tentativas limitadas" — só a
+    garantia de nunca bloquear o avanço foi revertida.)
+Added sections: none
 Removed sections: none
 Sections updated:
-  - Restrições Técnicas e Privacidade (credencial protegida agora cobre professor E
-    aluno explicitamente)
-  - Governance → Revisão de conformidade (referência ao Princípio II atualizada)
+  - Governance → Revisão de conformidade (nenhuma mudança de texto necessária —
+    referência ao Princípio IV já era genérica)
 Templates requiring updates:
   - .specify/templates/plan-template.md ⚠ pending manual review (not modified by this command)
   - .specify/templates/spec-template.md ⚠ pending manual review (not modified by this command)
@@ -77,15 +82,27 @@ de entrar em uso com as turmas.
 **Racional**: o jogo substitui parte da fixação de conteúdo pós-aula; um erro de
 cálculo no próprio material de estudo prejudica diretamente o aprendizado do aluno.
 
-### IV. Aprendizagem sem Bloqueio (Erro é Feedback)
+### IV. Validação por Acerto com Retentativa Sempre Disponível
 
-Um erro do aluno NUNCA pode travar ou impedir o progresso na trilha. Toda resposta
-incorreta DEVE exibir imediatamente a explicação do cálculo correto antes de permitir
-seguir adiante. É proibido implementar mecanismos de "tentativas limitadas" ou
-travas de bloqueio permanente por erro.
+Uma estação ou objeto interativo só é considerado validado/resolvido quando
+respondido CORRETAMENTE. Enquanto a resposta estiver errada, ele permanece pendente
+e PODE impedir o avanço para a próxima sala/estação/trilha — esse bloqueio é sempre
+temporário e reversível: o aluno consegue destravá-lo a qualquer momento respondendo
+corretamente, sem limite de tentativas. Toda resposta incorreta DEVE continuar
+exibindo imediatamente a explicação do cálculo correto, e o aluno DEVE poder tentar
+novamente de imediato, sem espera artificial. É proibido qualquer mecanismo de
+"tentativas limitadas" (ex.: número máximo de erros permitido) ou qualquer bloqueio
+que não seja destravável respondendo corretamente — o único jeito de ficar
+definitivamente impedido de avançar é nunca acertar, o que permanece sob controle do
+próprio aluno a qualquer momento.
 
-**Racional**: o objetivo é fixação de conteúdo, não eliminação — o aluno erra,
-entende o porquê, e continua, mantendo o engajamento com o jogo sério.
+**Racional**: exigir a resposta correta para validar uma estação reforça o rigor
+pedagógico — "estação concluída" passa a significar que o aluno de fato demonstrou
+domínio do conteúdo, não só que tentou uma vez. A retentativa sempre disponível, sem
+limite e sem penalidade adicional além da já prevista (ex.: perda de pontos por usar
+dica), evita que isso vire punição ou eliminação: o aluno erra, entende o porquê pela
+explicação imediata, tenta de novo, e avança assim que realmente acerta — mantendo o
+engajamento do jogo sério sem abrir mão da comprovação real de aprendizado.
 
 ### V. Personalização e Variabilidade das Perguntas
 
@@ -153,4 +170,4 @@ acima, em especial o Princípio I (idioma) e o Princípio II (front-end simples,
 backend mínimo e justificado apenas para autenticação de professor/aluno e
 habilitação de aluno).
 
-**Version**: 2.1.0 | **Ratified**: 2026-08-18 | **Last Amended**: 2026-08-19
+**Version**: 3.0.0 | **Ratified**: 2026-08-18 | **Last Amended**: 2026-08-20
